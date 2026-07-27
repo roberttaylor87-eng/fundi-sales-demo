@@ -809,15 +809,31 @@ html.dark .rp-tag-a{background:#2A2215;color:var(--amber)}
 .sendboss:active{opacity:.85}
 .printbtn{width:100%;margin-top:9px;padding:12px;background:var(--paper);color:var(--primary);border:1.5px solid var(--line);border-radius:12px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
 
-@media print{body,html.dark .app{background:#0F1419;box-shadow:none}
+@media print{
+/* Paper is white and ink is dark, whatever the app theme. */
+html,body,.app{background:#fff!important;color:#000!important;box-shadow:none!important;max-width:none!important}
+html.dark,html.dark body,html.dark .app,html.dark header{background:#fff!important;color:#000!important}
+/* The quote and invoice are documents: paper tokens, never theme tokens. */
 html.dark .formal{background:#fff!important;--primary:#2563EB;--primary-dark:#1D4FD7;--primary-tint:#E8F0FE;--ink:#1a1a1a;--soft:#666;--line:#E4EAF1;--surface:#fff}
-html.dark .nav{background:#1B2733;border-color:#2F3B47}
-html.dark header{background:#0F1419}
-.app{background:#fff}.formal-bar{display:none}.formal{position:static;max-width:none}.formal-doc{padding:0}body.print-report{color:#000}body.print-report .app{background:#fff}body.print-report header,body.print-report nav,body.print-report .rep-back,body.print-report .rep-acts,body.print-report .sendboss,body.print-report .printbtn{display:none!important}body.print-report .screen{display:none!important}body.print-report #screenReport{display:block!important}body.print-report html.dark .app{background:#0F1419;box-shadow:none}
-html.dark .formal{background:#fff!important;--primary:#2563EB;--primary-dark:#1D4FD7;--primary-tint:#E8F0FE;--ink:#1a1a1a;--soft:#666;--line:#E4EAF1;--surface:#fff}
-html.dark .nav{background:#1B2733;border-color:#2F3B47}
-html.dark header{background:#0F1419}
-.app{box-shadow:none;max-width:none}body.print-report .rep-card,body.print-report .stat{border-color:#999}}
+html.dark .formal-doc,html.dark .formal-doc *{color:#1a1a1a!important}
+.formal{position:static;max-width:none}
+.formal-doc{padding:0}
+.formal-bar{display:none!important}
+/* Interface does not belong in a printed document. */
+header,nav,.nav,.qstrip,.dock,.drawer,.drawer-backdrop,.overlay,
+button,.btn,.fubtn,.cf-btn,.ds-btn,.cp-btn,.pr-act,.dv-btn,.ord-markpaid,
+.th-actions,.deliv-acts,.rep-back,.rep-acts,.sendboss,.printbtn,
+.demo-tip,.tipbar,.reward,.toast,.cash-card{display:none!important}
+/* Cards must not be cut in half by a page break. */
+.rep-card,.stat,.cp-stat,.cp-stats,.ord-row,.prod,.th-row,.ho-row,.cust-row,
+.deliv-card,.calc-result,.set-section{break-inside:avoid;page-break-inside:avoid}
+/* Print has room that a phone screen does not: show the full text. */
+.nm,.cust-nm,.ord-name,.rec-l,.cp-sl,.th-t{overflow:visible!important;text-overflow:clip!important;white-space:normal!important}
+/* print-report isolates the report; keep that, minus the interface above. */
+body.print-report .screen{display:none!important}
+body.print-report #screenReport{display:block!important}
+body.print-report .rep-card,body.print-report .stat{border-color:#999}
+}
 </style>
 </head>
 <body>
