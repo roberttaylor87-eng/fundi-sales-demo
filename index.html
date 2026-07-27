@@ -831,6 +831,11 @@ button,.btn,.fubtn,.cf-btn,.ds-btn,.cp-btn,.pr-act,.dv-btn,.ord-markpaid,
 .nm,.cust-nm,.ord-name,.rec-l,.cp-sl,.th-t{overflow:visible!important;text-overflow:clip!important;white-space:normal!important}
 /* print-report isolates the report; keep that, minus the interface above. */
 body.print-report .screen{display:none!important}
+/* the formal document prints alone: nothing behind it, no app furniture */
+body.print-formal .screen,body.print-formal .qstrip,body.print-formal .dock{display:none!important}
+body.print-formal .formal{display:flex!important;position:static;max-width:none}
+/* safety net for a plain Ctrl+P with the document open, when no class is set */
+body:has(.formal.show) .screen,body:has(.formal.show) .qstrip{display:none!important}
 body.print-report #screenReport{display:block!important}
 body.print-report .rep-card,body.print-report .stat{border-color:#999}
 }
@@ -1575,7 +1580,7 @@ body.print-report .rep-card,body.print-report .stat{border-color:#999}
 <div class="formal" id="formal">
   <div class="formal-bar">
     <button class="btn btn-formal" id="backBtn" onclick="hide2('formal')">← Back</button>
-    <button class="btn btn-primary" id="saveBtn" onclick="window.print()">Save as PDF / Print</button>
+    <button class="btn btn-primary" id="saveBtn" onclick="printFormal()">Save as PDF / Print</button>
   </div>
   <div class="formal-doc" id="formalDoc"></div>
 </div>
@@ -4107,6 +4112,14 @@ function sendBossReport(){
   const ph=loadBossPhone();
   const url=ph?('https://wa.me/'+ph+'?text='+encodeURIComponent(msg)):('https://wa.me/?text='+encodeURIComponent(msg));
   window.open(url,'_blank');
+}
+function printFormal(){
+  /* the quote or invoice is the only thing that should reach the paper */
+  document.body.classList.add('print-formal');
+  var done=function(){document.body.classList.remove('print-formal');window.removeEventListener('afterprint',done);};
+  window.addEventListener('afterprint',done);
+  window.print();
+  setTimeout(done,1500);
 }
 function printReport(){
   document.body.classList.add('print-report');
