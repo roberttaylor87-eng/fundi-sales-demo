@@ -2706,16 +2706,16 @@ function openExploreIds(ids,label){
 
 function renderLostAnalysis(){
   var d=quoteAnalysisData();
-  var html='<div class="qa-hero qa-hero-r"><div class="qa-hero-left"><div class="qa-hero-v">'+fmtTSh(d.lostTotal)+'</div><div class="qa-hero-l">'+t('lostValue')+' \u00b7 TSh '+fmt(d.avgLost)+' avg</div></div><div class="qa-hero-n">'+d.allLost.length+'</div></div>';
+  var html='<div class="qa-hero qa-hero-r exp-row" onclick="openExplore({},\''+t('lostTitle')+'\')"><div class="qa-hero-left"><div class="qa-hero-v">'+fmtTSh(d.lostTotal)+'</div><div class="qa-hero-l">'+t('lostValue')+' \u00b7 TSh '+fmt(d.avgLost)+' avg</div></div><div class="qa-hero-n">'+d.allLost.length+'</div></div>';
   html+='<div class="rep-card"><div class="rc-title">'+t('lostByCust')+'</div>';
   d.byCustLost.forEach(function(r){html+='<div class="wk-exp-row" onclick="openCustProfile(this.dataset.cn)" data-cn="'+r[0]+'" style="cursor:pointer"><span class="wk-exp-nm">'+r[0].split(' ')[0]+'</span><span class="wk-exp-v">'+r[1].won+' lost</span><span style="font-size:11px;color:var(--danger)">'+fmtTSh(r[1].total)+'</span><svg class="tc-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg></div>';});
   html+='</div>';
   html+='<div class="rep-card"><div class="rc-title">'+t('lostByCat')+'</div>';
-  d.byCatLost.forEach(function(r){var maxV=d.byCatLost[0][1];var pct=Math.round(r[1]/maxV*100);html+='<div class="rp-hbar"><span class="rp-hbar-nm">'+r[0]+'</span><div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%;background:var(--danger)"></div></div><span class="rp-hbar-v">'+fmtTSh(r[1])+'</span></div>';});
+  d.byCatLost.forEach(function(r){var maxV=d.byCatLost[0][1];var pct=Math.round(r[1]/maxV*100);html+='<div class="rp-hbar exp-row" onclick=\'openExplore({cat:'+JSON.stringify(r[0])+'},'+JSON.stringify(r[0])+')\'><span class="rp-hbar-nm">'+r[0]+'</span><div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%;background:var(--danger)"></div></div><span class="rp-hbar-v">'+fmtTSh(r[1])+'</span></div>';});
   html+='</div>';
   html+='<div class="rep-card"><div class="rc-title">'+t('lostVsWon')+'</div>';
   html+='<div class="wk-exp-row"><span class="wk-exp-nm">'+t('avgLostQuote')+'</span><span class="wk-exp-v">'+fmtTSh(d.avgLost)+'</span></div>';
-  html+='<div class="wk-exp-row"><span class="wk-exp-nm">'+t('avgWonQuote')+'</span><span class="wk-exp-v">'+fmtTSh(d.avgWon)+'</span></div>';
+  html+='<div class="wk-exp-row exp-row" onclick="openExplore({},\''+t('avgWonQuote')+'\')"><span class="wk-exp-nm">'+t('avgWonQuote')+'</span><span class="wk-exp-v">'+fmtTSh(d.avgWon)+'</span></div>';
   html+='<div class="qa-insight">'+t('sizeInsight')+'</div></div>';
   html+='<div class="rep-card"><div class="rc-title">'+t('responseLag')+'</div>';
   html+='<div class="wk-exp-row"><span class="wk-exp-nm">'+t('within1Day')+'</span><span class="wk-exp-v">'+d.fastLost+'</span></div>';
@@ -2809,15 +2809,15 @@ function renderCustProfile(){
   const c=d.customer;
   const daysLabel=d.daysAgo===null?'--':(d.daysAgo===0?t('custToday'):t('custDaysAgo').replace('{n}',d.daysAgo));
   const tierTag=c?(c.tier==='vip'?'<span class="rp-tag rp-tag-b">VIP</span>':'<span class="rp-tag" style="background:var(--line);color:var(--soft)">Regular</span>'):'';
-  const winRateHtml=d.winRate!==null?'<div class="cp-stat"><div class="cp-sv">'+d.winRate+'%</div><div class="cp-sl">'+t('custWinRate')+'</div></div>':'';
+  const winRateHtml=d.winRate!==null?'<div class="cp-stat exp-row" onclick=\'openExplore({custName:'+JSON.stringify(nm)+'},'+JSON.stringify(nm)+')\'><div class="cp-sv">'+d.winRate+'%</div><div class="cp-sl">'+t('custWinRate')+'</div></div>':'';
   var _g=null;
   if(d.orders.length>=3){var _ds=d.orders.map(function(o){return o.date;}).sort(function(a,b){return a-b;});var _s=0;for(var _i=1;_i<_ds.length;_i++)_s+=_ds[_i]-_ds[_i-1];_g=Math.max(1,Math.round(_s/(_ds.length-1)/DAY));}
   const rhythmHtml=_g?'<div class="th-rhythm">'+t('thRhythm').replace('{g}',_g)+((d.daysAgo!==null&&d.daysAgo>=_g)?' \u00b7 <b>'+t('thDueNow')+'</b>':'')+'</div>':'';
   const statsHtml=rhythmHtml+'<div class="cp-stats">'
-    +'<div class="cp-stat"><div class="cp-sv">'+fmtTSh(d.totalSpend)+'</div><div class="cp-sl">'+t('custLifetime')+'</div></div>'
-    +'<div class="cp-stat"><div class="cp-sv">'+d.orders.length+'</div><div class="cp-sl">'+t('custOrderCount')+'</div></div>'
-    +'<div class="cp-stat"><div class="cp-sv">'+fmtTSh(d.avgOrd)+'</div><div class="cp-sl">'+t('custAvgOrder')+'</div></div>'
-    +'<div class="cp-stat"><div class="cp-sv">'+daysLabel+'</div><div class="cp-sl">'+t('custLastOrder')+'</div></div>'
+    +'<div class="cp-stat exp-row" onclick=\'openExplore({custName:'+JSON.stringify(nm)+'},'+JSON.stringify(nm)+')\'><div class="cp-sv">'+fmtTSh(d.totalSpend)+'</div><div class="cp-sl">'+t('custLifetime')+'</div></div>'
+    +'<div class="cp-stat exp-row" onclick=\'openExplore({custName:'+JSON.stringify(nm)+'},'+JSON.stringify(nm)+')\'><div class="cp-sv">'+d.orders.length+'</div><div class="cp-sl">'+t('custOrderCount')+'</div></div>'
+    +'<div class="cp-stat exp-row" onclick=\'openExplore({custName:'+JSON.stringify(nm)+'},'+JSON.stringify(nm)+')\'><div class="cp-sv">'+fmtTSh(d.avgOrd)+'</div><div class="cp-sl">'+t('custAvgOrder')+'</div></div>'
+    +'<div class="cp-stat exp-row" onclick=\'openExplore({custName:'+JSON.stringify(nm)+'},'+JSON.stringify(nm)+')\'><div class="cp-sv">'+daysLabel+'</div><div class="cp-sl">'+t('custLastOrder')+'</div></div>'
     +winRateHtml+'</div>'
     +'<div class="th-actions">'
     +'<button class="btn btn-wa" style="flex:1;padding:10px" onclick="thGreet(\''+nm.replace(/'/g,'')+'\')">'+t('thGreetBtn')+'</button>'
@@ -2831,24 +2831,24 @@ function renderCustProfile(){
   state.quotes.filter(function(q){return q.custName===nm;}).forEach(function(q){
     var sub=q.status==='awaiting'?t('thQuoteWait'):(q.status==='ordered'?t('thQuoteYes'):(q.status||''));
     if(q.expiry&&q.expiry>Date.now())sub+=' \u00b7 '+t('thBei').replace('{d}',new Date(q.expiry).toLocaleDateString(loc2,{day:'numeric',month:'short'}));
-    ev.push({ts:q.date,ic:'\u270E',cls:'th-q',title:t('thQuote'),sub:sub,amt:fmtTSh(q.total)});
+    ev.push({ts:q.date,ic:'\u270E',cls:'th-q',title:t('thQuote'),sub:sub,amt:fmtTSh(q.total),oid:null});
   });
   d.orders.forEach(function(o){
     var sub=o.delivSchedule?t('thDeliv').replace('{d}',o.delivSchedule):'';
-    ev.push({ts:o.date,ic:'\u2714',cls:'th-o',title:t('thOrder'),sub:sub,amt:fmtTSh(o.total)});
+    ev.push({ts:o.date,ic:'\u2714',cls:'th-o',title:t('thOrder'),sub:sub,amt:fmtTSh(o.total),oid:o.id});
   });
   ev.sort(function(a,b){return b.ts-a.ts;});
   var historyHtml='<div class="rep-card"><div class="rc-title">'+t('thTitle')+'</div>';
   if(!ev.length)historyHtml+='<div style="font-size:12px;color:var(--soft);padding:8px 0">'+t('custNoOrders')+'</div>';
   ev.slice(0,20).forEach(function(e){
-    historyHtml+='<div class="th-row"><div class="th-ic '+e.cls+'">'+e.ic+'</div><div class="th-m"><div class="th-t">'+e.title+'</div><div class="th-s">'+new Date(e.ts).toLocaleDateString(loc2,{day:'numeric',month:'short'})+(e.sub?' \u00b7 '+e.sub:'')+'</div>'+((e.bar!==null&&e.bar!==undefined)?'<div class="th-bar"><div style="width:'+e.bar+'%"></div></div>':'')+'</div><div class="th-a">'+e.amt+'</div></div>';
+    historyHtml+='<div class="th-row'+(e.oid?' exp-row':'')+'"'+(e.oid?' onclick="openSaleDetail(\''+e.oid+'\')"':'')+'><div class="th-ic '+e.cls+'">'+e.ic+'</div><div class="th-m"><div class="th-t">'+e.title+'</div><div class="th-s">'+new Date(e.ts).toLocaleDateString(loc2,{day:'numeric',month:'short'})+(e.sub?' \u00b7 '+e.sub:'')+'</div>'+((e.bar!==null&&e.bar!==undefined)?'<div class="th-bar"><div style="width:'+e.bar+'%"></div></div>':'')+'</div><div class="th-a">'+e.amt+'</div></div>';
   });
   historyHtml+='</div>';
   var catsHtml='';
   if(d.topCats.length){
     catsHtml='<div class="rep-card"><div class="rc-title">'+t('custBuys')+'</div>';
     d.topCats.forEach(function(pair){var cat=pair[0],v=pair[1];var pct=Math.round(v/d.topCats[0][1]*100);
-      catsHtml+='<div class="rp-hbar"><span class="rp-hbar-nm">'+cat+'</span><div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%"></div></div><span class="rp-hbar-v">'+fmtTSh(v)+'</span></div>';
+      catsHtml+='<div class="rp-hbar exp-row" onclick=\'openExplore({custName:'+JSON.stringify(nm)+',cat:'+JSON.stringify(cat)+'},'+JSON.stringify(cat)+')\'><span class="rp-hbar-nm">'+cat+'</span><div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%"></div></div><span class="rp-hbar-v">'+fmtTSh(v)+'</span></div>';
     });
     catsHtml+='</div>';
   }
@@ -3515,12 +3515,14 @@ function renderSettings(){
   document.getElementById('setLangSW').classList.toggle('on',state.lang==='sw');
   document.getElementById('setDarkBtn').classList.toggle('on',state.dark||false);
   const r=reportData();
+  /* every performance figure opens this rep's own transactions */
+  var _pfEx=" onclick='openExplore({repId:"+JSON.stringify(REP_ID)+"},"+JSON.stringify(t('perfTitle'))+")'";
   document.getElementById('perfGrid').innerHTML=
-    `<div class="pf-row"><span>${t('perfSales')}</span><span class="pf-v">${fmtTSh(r.total)}</span></div>`
-    +`<div class="pf-row"><span>${t('perfOrders')}</span><span class="pf-v">${r.ordersN}</span></div>`
-    +`<div class="pf-row"><span>${t('perfAvg')}</span><span class="pf-v">${fmtTSh(r.avg)}</span></div>`
-    +`<div class="pf-row"><span>${t('perfWon')}</span><span class="pf-v">${r.wonPct}%</span></div>`
-    +`<div class="pf-row"><span>${t('perfCommission')}</span><span class="pf-v">${fmtTSh(bonusInfo(r.total).amt)}</span></div>`;
+    `<div class="pf-row exp-row" ${_pfEx}><span>${t('perfSales')}</span><span class="pf-v">${fmtTSh(r.total)}</span></div>`
+    +`<div class="pf-row exp-row" ${_pfEx}><span>${t('perfOrders')}</span><span class="pf-v">${r.ordersN}</span></div>`
+    +`<div class="pf-row exp-row" ${_pfEx}><span>${t('perfAvg')}</span><span class="pf-v">${fmtTSh(r.avg)}</span></div>`
+    +`<div class="pf-row exp-row" ${_pfEx}><span>${t('perfWon')}</span><span class="pf-v">${r.wonPct}%</span></div>`
+    +`<div class="pf-row exp-row" ${_pfEx}><span>${t('perfCommission')}</span><span class="pf-v">${fmtTSh(bonusInfo(r.total).amt)}</span></div>`;
   document.getElementById('setRecTitle').textContent=t('recTitle');
   var _rt=document.getElementById('setRepSalesTitle');if(_rt)_rt.textContent=t('repSalesTitle');
   var _rh=document.getElementById('setRepSalesHint');if(_rh)_rh.textContent=t('repSalesHint');
@@ -3907,10 +3909,10 @@ function renderReport(){
   state.expandedWeek=state.expandedWeek!=null?state.expandedWeek:null;
   function arrow(v,suf){return v>0?`<div class="st-d st-up">↑ ${v}${suf}</div>`:(v<0?`<div class="st-d st-dn">↓ ${Math.abs(v)}${suf}</div>`:`<div class="st-d">—</div>`);}
   const stats=`<div class="stat-grid">`
-    +`<div class="stat"><div class="v">TSh ${fmtM(r.total)}</div><div class="l">${t('statTotal')}</div>${arrow(r.mom.total,'%')}</div>`
-    +`<div class="stat"><div class="v">${r.ordersN}</div><div class="l">${t('navorders')}</div>${arrow(r.mom.orders,'')}</div>`
-    +`<div class="stat"><div class="v">${fmtTSh(r.avg)}</div><div class="l">${t('statAvg')}</div>${arrow(r.mom.avg,'%')}</div>`
-    +`<div class="stat"><div class="v">${r.wonPct}%</div><div class="l">${t('statWon')}</div>${arrow(r.mom.wonPct,'%')}</div>`
+    +`<div class="stat exp-row" onclick="openExplore({},'${t('statTotal')}')"><div class="v">TSh ${fmtM(r.total)}</div><div class="l">${t('statTotal')}</div>${arrow(r.mom.total,'%')}</div>`
+    +`<div class="stat exp-row" onclick="openExplore({},'${t('navorders')}')"><div class="v">${r.ordersN}</div><div class="l">${t('navorders')}</div>${arrow(r.mom.orders,'')}</div>`
+    +`<div class="stat exp-row" onclick="openExplore({},'${t('statAvg')}')"><div class="v">${fmtTSh(r.avg)}</div><div class="l">${t('statAvg')}</div>${arrow(r.mom.avg,'%')}</div>`
+    +`<div class="stat exp-row" onclick="openWonAnalysis()"><div class="v">${r.wonPct}%</div><div class="l">${t('statWon')}</div>${arrow(r.mom.wonPct,'%')}</div>`
     +`</div>`;
   const toggle=`<div class="rp-toggle"><button class="rp-tb${state.reportView==='weekly'?' on':''}" onclick="state.reportView='weekly';state.expandedWeek=null;renderReport()">${t('weeklyLbl')}</button><button class="rp-tb${state.reportView==='daily'?' on':''}" onclick="state.reportView='daily';renderReport()">${t('dailyLbl')}</button></div>`;
   let timeView='';
