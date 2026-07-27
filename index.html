@@ -1824,15 +1824,48 @@ function wkey(){const d=new Date();return 'fundi_wins_'+d.getFullYear()+String(d
 function loadWins(){return 0;}
 function bumpWins(){state.wins=(state.wins||0)+1;try{localStorage.setItem(wkey(),state.wins);}catch(e){}}
 function itemsTotal(items){return (items||[]).reduce((s,it)=>{const p=CATALOGUE.find(x=>x.id===it.id);return s+(p?p.price*it.qty:0);},0);}
+/* The seeded demo orders were never created from quotes, which made every
+   quote-linked metric wrong. These backfill one 'ordered' quote per demo
+   order, dated a couple of days before it, plus a handful of genuinely lost
+   quotes so the demo win rate is realistic rather than 100%. */
+function backfillQuotes(){
+  var out=[];
+  allOrdersAll().forEach(function(o,i){
+    if(o.quoteId)return;                       /* real quotes stay untouched */
+    var qid='q-seed-'+String(o.id).replace(/[^A-Za-z0-9]/g,'');
+    o.quoteId=qid;
+    out.push({id:qid,custId:o.custId,custName:o.custName,items:o.items||[],
+      total:o.total,disc:0,date:o.date-(2+(i%3))*DAY,status:'ordered',
+      confirmedAt:o.date,repId:o.repId||REP_ID,repName:o.repName||'',
+      seeded:true});
+  });
+  /* lost quotes: without these the demo reads as a 100% win rate, which
+     teaches the wrong thing about what the screen means */
+  var lost=[
+    {c:'Temeke Plumbing Mart',      items:[{id:34,qty:6},{id:20,qty:10}], ago:9,  why:'price'},
+    {c:'Kimara Pipe Centre',        items:[{id:53,qty:2}],                ago:14, why:'stock'},
+    {c:'Mikocheni Sanitary Ware',   items:[{id:57,qty:3},{id:45,qty:8}],  ago:6,  why:'price'},
+    {c:'Buguruni Building Hardware',items:[{id:96,qty:1}],                ago:19, why:'competitor'},
+    {c:'Tegeta Water & Pipes',      items:[{id:28,qty:12}],               ago:4,  why:'price'}
+  ];
+  lost.forEach(function(x,i){
+    var cu=(state.customers||[]).find(function(c){return c.biz===x.c;});
+    out.push({id:'q-lost-'+i,custId:cu?cu.id:null,custName:x.c,items:x.items,
+      total:itemsTotal(x.items),disc:0,date:Date.now()-x.ago*DAY,
+      status:'lost',lostAt:Date.now()-(x.ago-2)*DAY,lostWhy:x.why,
+      repId:REP_ID,repName:(state&&state.rep)||'',seeded:true});
+  });
+  return out;
+}
 function seedQuotes(){const n=Date.now();
   const q=[
    {id:'q1',custId:3,custName:'Kariakoo Building Materials',items:[{id:10,qty:8},{id:20,qty:12},{id:30,qty:6}],date:n-3*DAY,status:'confirmed',confirmedAt:n-2*DAY},
    {id:'q2',custId:8,custName:'Tabata Construction Supplies',items:[{id:5,qty:3},{id:47,qty:4}],date:n-4*DAY,status:'awaiting'},
    {id:'q3',custId:1,custName:'Mbezi Hardware & General Supplies',items:[{id:60,qty:20},{id:63,qty:15}],date:n-1*DAY,status:'awaiting'}];
   q.forEach(x=>x.total=itemsTotal(x.items));return q;}
-function loadQuotes(){return seedQuotes();}
+function loadQuotes(){return seedQuotes();}   /* backfill is merged after orders load */
 function saveQuotes(){try{localStorage.setItem('fundi_quotes2',JSON.stringify(state.quotes));}catch(e){}}
-state.customers=CUSTOMERS; state.prospects=loadProspects(); state.custView='c'; state.manualDone=loadManualTasks(); state.stock=loadStock(); state.expandedOrder=null; state.expandedFu=null; state.delivOpen=false; state.expandedDeliv=null; state.dark=!!localStorage.getItem('fundi_dark');applyDark(); state.orders=loadOrders(); state.orders.forEach(o=>{if(!o.total)o.total=itemsTotal(o.items);}); demoOrdersInit(); state.wins=loadWins(); state.quotes=loadQuotes();
+state.customers=CUSTOMERS; state.prospects=loadProspects(); state.custView='c'; state.manualDone=loadManualTasks(); state.stock=loadStock(); state.expandedOrder=null; state.expandedFu=null; state.delivOpen=false; state.expandedDeliv=null; state.dark=!!localStorage.getItem('fundi_dark');applyDark(); state.orders=loadOrders(); state.orders.forEach(o=>{if(!o.total)o.total=itemsTotal(o.items);}); demoOrdersInit(); state.wins=loadWins(); state.quotes=loadQuotes().concat(backfillQuotes());
 function currentSales(){return allOrdersAll().reduce((s,o)=>s+o.total,0);}
 function pendingQuotes(){return state.quotes.filter(q=>q.status==='awaiting').sort((a,b)=>a.date-b.date);}
 function confirmedQuotes(){return state.quotes.filter(q=>q.status==='confirmed').sort((a,b)=>a.confirmedAt-b.confirmedAt);}
@@ -1863,7 +1896,7 @@ function confirmOrder(qid){const q=state.quotes.find(x=>x.id===qid);if(!q||q.sta
   const snap={qid:q.id,stock:{},wins:state.wins,orderId:newId('o')};
   (q.items||[]).forEach(it=>{snap.stock[it.id]=getStock(it.id);state.stock[it.id]=Math.max(0,getStock(it.id)-it.qty);});saveStock();
   q.status='ordered';saveQuotes();
-  const oc=q.custId?CUSTOMERS.find(x=>x.id===q.custId):null;state.orders.push({delivBudget:delivMax(q.total),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',phone:oc?oc.phone:'',total:q.total,items:q.items,date:Date.now(),delivSchedule:null,delivStatus:'pending'});saveOrders();
+  const oc=q.custId?CUSTOMERS.find(x=>x.id===q.custId):null;state.orders.push({quoteId:q.id,delivBudget:delivMax(q.total),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',phone:oc?oc.phone:'',total:q.total,items:q.items,date:Date.now(),delivSchedule:null,delivStatus:'pending'});saveOrders();
   bumpWins();state.lastUndo=snap;
   showReward(t('rewardmsg').replace('{n}',fmt(q.total))+' \u00b7 '+t('rewardDeliv').replace('{b}',fmt(delivMax(q.total))));
   renderHome();renderList();
@@ -2319,7 +2352,7 @@ function finaliseOrder(){
   (q.items||[]).forEach(function(it){snap.stock[it.id]=getStock(it.id);state.stock[it.id]=Math.max(0,getStock(it.id)-it.qty);});saveStock();
   q.status='ordered';saveQuotes();
   var oc=q.custId?CUSTOMERS.find(function(x){return x.id===q.custId;}):null;
-  state.orders.push({delivBudget:delivMax(q.total),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',
+  state.orders.push({quoteId:q.id,delivBudget:delivMax(q.total),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',
     phone:oc?oc.phone:'',total:q.total,items:q.items,date:Date.now(),
     delivSchedule:null,delivStatus:'pending'});
   saveOrders();bumpWins();state.lastUndo=snap;
@@ -2560,7 +2593,10 @@ function custProfileData(custName){
   var quotesForCust=state.quotes.filter(function(q){return q.custName===custName;});
   var qSent=quotesForCust.length;
   var qWon=quotesForCust.filter(function(q){return q.status==='confirmed'||q.status==='ordered';}).length;
-  var winRate=qSent>0?Math.round(qWon/qSent*100):null;
+  var qLost=quotesForCust.filter(function(q){return q.status==='lost';}).length;
+  /* won over decided, not over sent: a quote still awaiting an answer has
+     neither been won nor lost and should not drag the rate down */
+  var winRate=(qWon+qLost)>0?Math.round(qWon/(qWon+qLost)*100):null;
   return {customer:c,orders:allOrders,totalSpend:totalSpend,avgOrd:avgOrd,lastDate:lastDate,daysAgo:daysAgo,topCats:topCats,qSent:qSent,qWon:qWon,winRate:winRate};
 }
 
@@ -3873,6 +3909,164 @@ function saveHandoverPdf(){
 }
 /* Credit lands on payment + delivery, so this is money collected rather
    than orders merely written. Local device only until there is a backend. */
+/* ================= analytics query layer =================================
+   One place that answers "sales for rep X, period Y, grouped by Z".
+   Screens call this instead of walking arrays, so the shapes agree, every
+   aggregate can be drilled into, and swapping in a backend touches one
+   function rather than every screen. */
+var DATA={
+  /* the only storage-aware function in the layer */
+  source:function(){
+    return {orders:allOrdersAll(),quotes:(state.quotes||[]),customers:(state.customers||[])};
+  },
+
+  /* ---- periods ------------------------------------------------------- */
+  period:function(kind,ref){
+    var d=ref?new Date(ref):new Date(),s=new Date(d),e=new Date(d);
+    if(kind==='day'){s.setHours(0,0,0,0);e.setHours(23,59,59,999);}
+    else if(kind==='week'){var dow=(s.getDay()+6)%7;s.setDate(s.getDate()-dow);s.setHours(0,0,0,0);
+      e=new Date(s);e.setDate(e.getDate()+6);e.setHours(23,59,59,999);}
+    else if(kind==='month'){s=new Date(d.getFullYear(),d.getMonth(),1);
+      e=new Date(d.getFullYear(),d.getMonth()+1,0,23,59,59,999);}
+    else if(kind==='all'){s=new Date(0);e=new Date(8640000000000);}
+    return {kind:kind,from:s.getTime(),to:e.getTime()};
+  },
+  shift:function(p,by){
+    var d=new Date(p.from);
+    if(p.kind==='day')d.setDate(d.getDate()+by);
+    else if(p.kind==='week')d.setDate(d.getDate()+by*7);
+    else if(p.kind==='month')d.setMonth(d.getMonth()+by);
+    else return p;
+    return DATA.period(p.kind,d.getTime());
+  },
+
+  /* ---- the core query ------------------------------------------------ */
+  /* f: {from,to,repId,custName,area,cat,productId,status} - all optional */
+  sales:function(f){
+    f=f||{};
+    var src=DATA.source();
+    var rows=src.orders.filter(function(o){
+      if(f.from!=null&&o.date<f.from)return false;
+      if(f.to!=null&&o.date>f.to)return false;
+      if(f.repId&&o.repId!==f.repId)return false;
+      if(f.custName&&o.custName!==f.custName)return false;
+      if(f.area&&o.area!==f.area)return false;
+      if(f.paidOnly&&!isPaid(o))return false;
+      if(f.cat||f.productId){
+        return (o.items||[]).some(function(it){
+          var p=CATALOGUE.find(function(x){return x.id===it.id;});
+          if(!p)return false;
+          if(f.productId&&p.id!==f.productId)return false;
+          if(f.cat&&p.cat!==f.cat)return false;
+          return true;
+        });
+      }
+      return true;
+    });
+    /* when narrowed to a category or product, value only that part */
+    function valueOf(o){
+      if(!f.cat&&!f.productId)return o.total||0;
+      return (o.items||[]).reduce(function(s,it){
+        var p=CATALOGUE.find(function(x){return x.id===it.id;});
+        if(!p)return s;
+        if(f.productId&&p.id!==f.productId)return s;
+        if(f.cat&&p.cat!==f.cat)return s;
+        return s+p.price*it.qty;
+      },0);
+    }
+    var total=rows.reduce(function(s,o){return s+valueOf(o);},0);
+    return {rows:rows,ids:rows.map(function(o){return o.id;}),
+            count:rows.length,total:total,
+            avg:rows.length?Math.round(total/rows.length):0,
+            valueOf:valueOf,filter:f};
+  },
+
+  /* ---- quotes, for won/lost analysis --------------------------------- */
+  quotes:function(f){
+    f=f||{};
+    var qs=DATA.source().quotes.filter(function(q){
+      if(f.from!=null&&q.date<f.from)return false;
+      if(f.to!=null&&q.date>f.to)return false;
+      if(f.repId&&q.repId&&q.repId!==f.repId)return false;
+      if(f.custName&&q.custName!==f.custName)return false;
+      if(f.status&&q.status!==f.status)return false;
+      if(f.cat||f.productId){
+        return (q.items||[]).some(function(it){
+          var p=CATALOGUE.find(function(x){return x.id===it.id;});
+          if(!p)return false;
+          if(f.productId&&p.id!==f.productId)return false;
+          if(f.cat&&p.cat!==f.cat)return false;
+          return true;
+        });
+      }
+      return true;
+    });
+    var won=qs.filter(function(q){return q.status==='ordered'||q.status==='confirmed';});
+    var lost=qs.filter(function(q){return q.status==='lost';});
+    var open=qs.filter(function(q){return q.status==='awaiting';});
+    var sum=function(a){return a.reduce(function(s,q){return s+(q.total||0);},0);};
+    return {all:qs,won:won,lost:lost,open:open,
+            wonValue:sum(won),lostValue:sum(lost),openValue:sum(open),
+            /* decided only: an unanswered quote is neither a win nor a loss */
+            winRate:(won.length+lost.length)?Math.round(won.length/(won.length+lost.length)*100):null,
+            filter:f};
+  },
+
+  /* ---- grouping: every bucket keeps its ids so it can be drilled ------ */
+  groupBy:function(res,key){
+    var m={};
+    res.rows.forEach(function(o){
+      var buckets=[];
+      if(key==='customer')buckets=[o.custName||'?'];
+      else if(key==='area')buckets=[o.area||'?'];
+      else if(key==='rep')buckets=[o.repName||t('repUnknown')];
+      else if(key==='category'||key==='product'){
+        (o.items||[]).forEach(function(it){
+          var p=CATALOGUE.find(function(x){return x.id===it.id;});
+          if(!p)return;
+          if(res.filter.cat&&p.cat!==res.filter.cat)return;
+          buckets.push({k:key==='category'?p.cat:p.name+(p.size?' '+p.size:''),
+                        v:p.price*it.qty,pid:p.id,cat:p.cat});
+        });
+      }
+      buckets.forEach(function(b){
+        var k=typeof b==='string'?b:b.k;
+        var v=typeof b==='string'?res.valueOf(o):b.v;
+        if(!m[k])m[k]={key:k,total:0,count:0,ids:[],pid:(b&&b.pid)||null,cat:(b&&b.cat)||null};
+        m[k].total+=v;m[k].ids.push(o.id);
+        if(m[k].ids.length===1||m[k].ids[m[k].ids.length-2]!==o.id)m[k].count++;
+      });
+    });
+    return Object.values(m).sort(function(a,b){return b.total-a.total;});
+  },
+
+  /* ---- a series for sparklines --------------------------------------- */
+  series:function(res,bucket,n){
+    n=n||12;var out=[],now=Date.now();
+    for(var i=n-1;i>=0;i--){
+      var p=DATA.shift(DATA.period(bucket,now),-i);
+      var v=res.rows.filter(function(o){return o.date>=p.from&&o.date<=p.to;})
+                    .reduce(function(s,o){return s+res.valueOf(o);},0);
+      out.push({from:p.from,to:p.to,value:v});
+    }
+    return out;
+  },
+
+  /* ---- one order, everything about it -------------------------------- */
+  order:function(id){
+    var o=DATA.source().orders.find(function(x){return x.id===id;});
+    if(!o)return null;
+    var q=DATA.source().quotes.find(function(x){return x.id===o.quoteId;});
+    return {order:o,quote:q||null,
+      lines:(o.items||[]).map(function(it){
+        var p=CATALOGUE.find(function(x){return x.id===it.id;})||{};
+        return {product:p,qty:it.qty,unit:it.override||p.price||0,
+                line:(it.override||p.price||0)*it.qty};
+      }),
+      payments:orderPayments(o),
+      daysToClose:q?Math.max(0,Math.round((o.date-q.date)/DAY)):null};
+  }
+};
 function creditedSales(){
   var by={};
   (state.orders||[]).forEach(function(o){
