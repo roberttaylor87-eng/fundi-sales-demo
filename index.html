@@ -1859,36 +1859,81 @@ function loadGreeted(){
 function saveGreeted(){lsSet(dkey(),JSON.stringify([...state.greeted]));}
 state.rep=(state.biz&&state.biz.rep)||'Pauline'; state.greeted=loadGreeted();
 const DAY=86400000, BASE_SALES=14200000;
-const DEMO_ORDERS=(function(){
-  var n=Date.now();
-  var raw=[
-    {id:'d1', custId:7, w:0, d:25, paid:true,  items:[{id:10,qty:36},{id:20,qty:21}]},
-    {id:'d2', custId:2, w:0, d:24, paid:true,  items:[{id:20,qty:29}]},
-    {id:'d3', custId:1, w:0, d:23, paid:true,  items:[{id:60,qty:47},{id:63,qty:104}]},
-    {id:'d4', custId:9, w:0, d:22, paid:true,  items:[{id:30,qty:23}]},
-    {id:'d5', custId:3, w:1, d:18, paid:true,  items:[{id:30,qty:36},{id:10,qty:26}]},
-    {id:'d6', custId:8, w:1, d:17, paid:false, items:[{id:5,qty:31}]},
-    {id:'d7', custId:1, w:1, d:16, paid:true,  items:[{id:63,qty:312},{id:60,qty:57}]},
-    {id:'d8', custId:4, w:1, d:15, paid:true,  items:[{id:47,qty:31}]},
-    {id:'d9', custId:1, w:2, d:11, paid:true,  items:[{id:60,qty:73},{id:10,qty:31}]},
-    {id:'d10',custId:3, w:2, d:10, paid:true,  items:[{id:10,qty:62},{id:20,qty:16}]},
-    {id:'d11',custId:8, w:2, d:9,  paid:false, items:[{id:5,qty:21},{id:47,qty:23}]},
-    {id:'d12',custId:7, w:2, d:8,  paid:true,  items:[{id:20,qty:31}]},
-    {id:'d13',custId:2, w:2, d:8,  paid:true,  items:[{id:30,qty:16}]},
-    {id:'d14',custId:9, w:2, d:7,  paid:true,  items:[{id:63,qty:234},{id:10,qty:21}]},
-    {id:'d15',custId:1, w:2, d:7,  paid:true,  items:[{id:10,qty:42}]},
-    {id:'d16',custId:3, w:2, d:7,  paid:false, items:[{id:47,qty:29}]},
-    {id:'d17',custId:12,w:3, d:4,  paid:true,  items:[{id:60,qty:52},{id:20,qty:18}]},
-    {id:'d18',custId:4, w:3, d:3,  paid:false, items:[{id:30,qty:31}]},
-    {id:'d19',custId:6, w:3, d:2,  paid:true,  items:[{id:10,qty:52},{id:63,qty:91}]}
-  ];
-  return raw.map(function(o){
-    var c=DEFAULT_CUSTOMERS.find(function(x){return x.id===o.custId;});
-    return {id:o.id,custId:o.custId,custName:c.biz,area:c.area,person:c.person,phone:c.phone,
-      week:o.w,date:n-o.d*DAY,delivStatus:o.paid?'delivered':'pending',items:o.items,total:0};
-  });
+/* Twelve months of trading, growing month on month. Deterministic off a fixed
+   seed so every device shows the same business; dates are relative to load so
+   it is always the last twelve months. */
+function demoRng(seed){
+  return function(){
+    seed=seed+0x6D2B79F5|0;
+    var t=Math.imul(seed^seed>>>15,1|seed);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const DEMO_ALL=(function(){
+  var R=demoRng(20260728), n=Date.now(), out=[], seq=0;
+  var MONTHS=12, BASE=13, GROWTH=1.125;
+
+  /* A real book of business is not flat: a handful of accounts carry it. */
+  var custs=DEFAULT_CUSTOMERS.slice();
+  var wt=custs.map(function(c,i){return 1/Math.pow(i+1,0.72);});
+  var wtTotal=wt.reduce(function(a,b){return a+b;},0);
+  function pickCust(){
+    var r=R()*wtTotal, acc=0;
+    for(var i=0;i<wt.length;i++){acc+=wt[i];if(r<=acc)return custs[i];}
+    return custs[0];
+  }
+  /* Cheap fittings move in boxes, sanitaryware moves in ones and twos. */
+  function lineFor(p,scale){
+    var q;
+    if(p.price>=100000)      q=1+R()*3;
+    else if(p.price>=20000)  q=2+R()*8;
+    else if(p.price>=5000)   q=6+R()*26;
+    else if(p.price>=1000)   q=15+R()*60;
+    else                     q=30+R()*170;
+    return {id:p.id,qty:Math.max(1,Math.round(q*scale))};
+  }
+
+  for(var m=MONTHS-1;m>=0;m--){
+    var age=MONTHS-1-m;                                  /* 0 = oldest month */
+    var count=Math.round(BASE*Math.pow(GROWTH,age)*(0.88+R()*0.24));
+    var scale=1+0.02*age;                                /* baskets grow too */
+    for(var k=0;k<count;k++){
+      var daysAgo=Math.round(m*30.4+R()*30.4);
+      if(daysAgo<0)daysAgo=0;
+      var c=pickCust();
+      var lines=2+Math.floor(R()*4), items=[], used={}, guard=0;
+      while(items.length<lines&&guard++<40){
+        var p=CATALOGUE[Math.floor(R()*CATALOGUE.length)];
+        if(used[p.id])continue;
+        used[p.id]=1;
+        items.push(lineFor(p,scale));
+      }
+      var delivered=daysAgo>4?true:(R()<0.55);
+      out.push({live:m===0,id:'d'+(++seq),custId:c.id,custName:c.biz,area:c.area,person:c.person,phone:c.phone,
+        week:daysAgo<28?Math.max(0,3-Math.floor(daysAgo/7)):null,
+        date:n-daysAgo*DAY,delivStatus:delivered?'delivered':'pending',
+        items:items,total:0});
+    }
+  }
+  out.sort(function(a,b){return a.date-b.date;});
+  return out;
 })();
-function demoOrdersInit(){DEMO_ORDERS.forEach(function(o){if(!o.total)o.total=itemsTotal(o.items);});seedPayments(DEMO_ORDERS);}
+/* The Orders screen is this month's workload and every row on it is actionable;
+   the report is the whole book. Split at generation, never by age at load time,
+   or an order would migrate between the two on a later day and collide with the
+   persisted copy of itself. */
+const DEMO_HISTORY=DEMO_ALL.filter(function(o){return !o.live;});
+const DEMO_LIVE=DEMO_ALL.filter(function(o){return o.live;});
+function demoOrdersInit(){
+  DEMO_HISTORY.forEach(function(o){
+    if(!o.total)o.total=itemsTotal(o.items);
+    /* stamped here, not in backfillQuotes: that runs on the seed path only, so
+       after the first reload demo orders would otherwise lose their quote */
+    if(!o.quoteId)o.quoteId='q-seed-'+String(o.id).replace(/[^A-Za-z0-9]/g,'');
+  });
+  seedPayments(DEMO_HISTORY);
+}
 /* Payment is what completes a delivery, so a delivered order with no payments
    is not a valid record. Deterministic off the id: the same demo always looks
    the same. Seed path only — a stored order is the rep's and is left alone. */
@@ -1916,8 +1961,8 @@ function seedPayments(list){
     }
   });
 }
-function allOrdersAll(){return DEMO_ORDERS.concat(state.orders);}
-function findOrderById(oid){return DEMO_ORDERS.find(function(o){return o.id===oid;})||state.orders.find(function(o){return o.id===oid;});}
+function allOrdersAll(){return DEMO_HISTORY.concat(state.orders);}
+function findOrderById(oid){return DEMO_HISTORY.find(function(o){return o.id===oid;})||state.orders.find(function(o){return o.id===oid;});}
 function defStock(id){return 24+(id*13)%90;}
 function loadStock(){
   var o=lsJSON('fundi_stock');
@@ -1925,7 +1970,10 @@ function loadStock(){
 }
 function saveStock(){lsSet('fundi_stock',JSON.stringify(state.stock));}
 function getStock(id){return state.stock[id]!=null?state.stock[id]:defStock(id);}
-function seedOrders(){const n=Date.now();return [{id:'o1',custId:3,custName:'Kariakoo Building Materials',area:'Kariakoo',person:'Amina Hassan',phone:'255000000103',items:[{id:10,qty:8},{id:20,qty:12},{id:30,qty:6}],total:0,date:n-DAY,delivSchedule:null,delivStatus:'delivered'},{id:'o2',custId:8,custName:'Tabata Construction Supplies',area:'Tabata',person:'Godfrey Shirima',phone:'255000000108',items:[{id:5,qty:3},{id:47,qty:4}],total:0,date:n-DAY/2,delivSchedule:null,delivStatus:'pending'}];}
+function seedOrders(){
+  /* this month, deep-copied so the rep mutating one never edits the history */
+  return JSON.parse(JSON.stringify(DEMO_LIVE));
+}
 function loadOrders(){
   var a=lsJSON('fundi_orders');
   if(Array.isArray(a))return a;      /* present but empty = she cleared it */
@@ -1949,7 +1997,10 @@ function itemsTotal(items){return (items||[]).reduce((s,it)=>{const p=CATALOGUE.
 function backfillQuotes(){
   var out=[];
   allOrdersAll().forEach(function(o,i){
-    if(o.quoteId)return;                       /* real quotes stay untouched */
+    /* A real order arrived with its own quote and is left alone. A demo order
+       carries the deterministic q-seed- stamp from demoOrdersInit, which is the
+       quote this backfill is here to create. */
+    if(o.quoteId&&String(o.quoteId).indexOf('q-seed-')!==0)return;
     var qid='q-seed-'+String(o.id).replace(/[^A-Za-z0-9]/g,'');
     o.quoteId=qid;
     out.push({id:qid,custId:o.custId,custName:o.custName,items:o.items||[],
@@ -1959,20 +2010,30 @@ function backfillQuotes(){
   });
   /* lost quotes: without these the demo reads as a 100% win rate, which
      teaches the wrong thing about what the screen means */
-  var lost=[
-    {c:'Temeke Plumbing Mart',      items:[{id:34,qty:6},{id:20,qty:10}], ago:9,  why:'price'},
-    {c:'Kimara Pipe Centre',        items:[{id:53,qty:2}],                ago:14, why:'stock'},
-    {c:'Mikocheni Sanitary Ware',   items:[{id:57,qty:3},{id:45,qty:8}],  ago:6,  why:'price'},
-    {c:'Buguruni Building Hardware',items:[{id:96,qty:1}],                ago:19, why:'competitor'},
-    {c:'Tegeta Water & Pipes',      items:[{id:28,qty:12}],               ago:4,  why:'price'}
-  ];
-  lost.forEach(function(x,i){
-    var cu=(state.customers||[]).find(function(c){return c.biz===x.c;});
-    out.push({id:'q-lost-'+i,custId:cu?cu.id:null,custName:x.c,items:x.items,
-      total:itemsTotal(x.items),disc:0,date:Date.now()-x.ago*DAY,
-      status:'lost',lostAt:Date.now()-(x.ago-2)*DAY,lostWhy:x.why,
-      repId:REP_ID,repName:(state&&state.rep)||'',seeded:true});
-  });
+  /* Lost and awaiting quotes in proportion to the book. Five fixed ones read
+     as 81% against 21 orders and 98% against 320, which teaches the wrong
+     thing about what the win rate means. */
+  var LR=demoRng(77021), whys=['price','stock','competitor','timing'];
+  var wonN=out.length;
+  var lostN=Math.round(wonN*0.23), openN=Math.round(wonN*0.07);
+  var pool=(state.customers||DEFAULT_CUSTOMERS);
+  function fakeQuote(i,status){
+    var c=pool[Math.floor(LR()*pool.length)];
+    var items=[],used={},lines=1+Math.floor(LR()*3),guard=0;
+    while(items.length<lines&&guard++<30){
+      var p=CATALOGUE[Math.floor(LR()*CATALOGUE.length)];
+      if(used[p.id])continue; used[p.id]=1;
+      items.push({id:p.id,qty:Math.max(1,Math.round(2+LR()*40))});
+    }
+    var ago=Math.round(LR()*360);
+    var q={id:'q-'+status+'-'+i,custId:c.id,custName:c.biz,items:items,
+      total:itemsTotal(items),disc:0,date:Date.now()-ago*DAY,status:status,
+      repId:REP_ID,repName:(state&&state.rep)||'',seeded:true};
+    if(status==='lost'){q.lostAt=Date.now()-Math.max(0,ago-2)*DAY;q.lostWhy=whys[Math.floor(LR()*whys.length)];}
+    return q;
+  }
+  for(var li=0;li<lostN;li++)out.push(fakeQuote(li,'lost'));
+  for(var oi=0;oi<openN;oi++)out.push(fakeQuote(oi,'awaiting'));
   return out;
 }
 function seedQuotes(){const n=Date.now();
@@ -3755,7 +3816,7 @@ function personalRecords(){
     if(!mostDay||e[1].n>mostDay.n)mostDay={key:e[0],sum:e[1].sum,n:e[1].n};
   });
   var weekSums=[0,0,0,0];
-  DEMO_ORDERS.forEach(function(o){weekSums[o.week]+=o.total;});
+  DEMO_HISTORY.forEach(function(o){if(o.week==null)return;weekSums[o.week]+=o.total;});
   state.orders.forEach(function(o){weekSums[3]+=o.total;});
   var bestWeekIdx=0;weekSums.forEach(function(v,i){if(v>weekSums[bestWeekIdx])bestWeekIdx=i;});
   var custMap={};all.forEach(function(o){custMap[o.custName]=(custMap[o.custName]||0)+o.total;});
@@ -4410,7 +4471,7 @@ function reportData(){
   var paid=0,owed=0;
   all.forEach(function(o){if(isPaid(o))paid+=o.total;else owed+=o.total;});
   var weekOrders=[[],[],[],[]];
-  DEMO_ORDERS.forEach(function(o){weekOrders[o.week].push(o);});
+  DEMO_HISTORY.forEach(function(o){if(o.week==null)return;weekOrders[o.week].push(o);});
   state.orders.forEach(function(o){weekOrders[3].push(o);});
   var weeks=weekOrders.map(function(wo){return wo.reduce(function(s,o){return s+o.total;},0);});
   var custMap={};
