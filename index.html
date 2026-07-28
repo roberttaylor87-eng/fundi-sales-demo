@@ -768,6 +768,13 @@ html.dark .qa-hero-r{background:#2A2215;border-color:#3D3222}
 .rc-shut .rc-body{display:none}
 .rc-shut .rc-head{margin-bottom:0}
 .wk-l{font-size:10px;color:var(--soft);font-weight:600;margin-top:3px;white-space:nowrap}
+/* a safety net for the column form: it should never reach this, but a long
+   label on a narrow phone must scroll rather than escape the card */
+.wk-bars{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rp-tl{min-height:30px;margin-bottom:2px}
+.rp-tl .rp-hbar-nm{width:74px;font-weight:600}
+.rp-tl-on .rp-hbar-nm{color:var(--primary);font-weight:800}
+.rp-tl-on .rp-hbar-track{outline:2px solid var(--primary);outline-offset:2px}
 .rp-more{cursor:pointer;color:var(--primary);font-weight:700}
 .rp-toggle{display:flex;margin-bottom:10px;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
 .rp-tb{flex:1;padding:8px;font-size:12.5px;font-weight:700;border:none;background:var(--paper);color:var(--soft);cursor:pointer;text-align:center}
@@ -795,7 +802,7 @@ html.dark .rp-tag-a{background:#2A2215;color:var(--amber)}
 .rp-hbar{display:flex;align-items:center;gap:7px;margin-bottom:7px}
 .rp-hbar-nm{font-size:12.5px;color:var(--ink);width:80px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rp-hbar-track{flex:1;height:10px;border-radius:10px;background:var(--line);overflow:hidden}
-.rp-hbar-fill{height:100%;border-radius:10px;background:var(--primary)}
+.rp-hbar-fill{display:block;height:100%;border-radius:10px;background:var(--primary)}
 .rp-hbar-v{font-size:11.5px;font-weight:700;color:var(--ink);width:52px;text-align:right;flex:none}
 .rp-pipe{display:flex;align-items:center;gap:7px;margin-bottom:7px}
 .rp-pipe-l{font-size:12px;color:var(--soft);width:36px;flex:none}
@@ -4796,13 +4803,26 @@ function renderReport(){
   let tl='';
   if(!S.buckets.length){tl='<div class="wk-exp-more">'+t('rpNoData')+'</div>';}
   else{
-    tl='<div class="wk-bars">'+S.buckets.map(function(b,i){
-      const sel=state.repBucket===i;
-      return '<div class="wk'+(sel?' wk-sel':'')+'" onclick="state.repBucket='+(sel?'null':i)+';renderReport()">'
-        +'<div class="wk-v">'+(b.value?fmtM(b.value):'')+'</div>'
-        +'<div class="wk-bar" style="height:'+Math.round(6+(b.value/mx)*54)+'px"></div>'
-        +'<div class="wk-l">'+repBucketLabel(b,S.step)+'</div></div>';
-    }).join('')+'</div>';
+    if(S.buckets.length>8){
+      /* many periods: rows, not columns. Columns cannot shrink past their
+         labels, and a phone has nowhere to put thirteen of them. */
+      tl=S.buckets.map(function(b,i){
+        const sel=state.repBucket===i;
+        const pc=Math.round(b.value/mx*100);
+        return '<div class="rp-hbar rp-tl'+(sel?' rp-tl-on':'')+'" onclick="state.repBucket='+(sel?'null':i)+';renderReport()" style="cursor:pointer">'
+          +'<span class="rp-hbar-nm">'+repBucketLabel(b,S.step)+'</span>'
+          +'<div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+Math.max(2,pc)+'%"></div></div>'
+          +'<span class="rp-hbar-v">'+(b.value?fmtM(b.value):'\u2014')+'</span></div>';
+      }).join('');
+    }else{
+      tl='<div class="wk-bars">'+S.buckets.map(function(b,i){
+        const sel=state.repBucket===i;
+        return '<div class="wk'+(sel?' wk-sel':'')+'" onclick="state.repBucket='+(sel?'null':i)+';renderReport()">'
+          +'<div class="wk-v">'+(b.value?fmtM(b.value):'')+'</div>'
+          +'<div class="wk-bar" style="height:'+Math.round(6+(b.value/mx)*54)+'px"></div>'
+          +'<div class="wk-l">'+repBucketLabel(b,S.step)+'</div></div>';
+      }).join('')+'</div>';
+    }
     if(state.repBucket!=null&&S.buckets[state.repBucket]){
       const b=S.buckets[state.repBucket];
       const bo=b.orders.slice().sort(function(a,c){return c.date-a.date;});
@@ -4843,8 +4863,8 @@ function renderReport(){
     if(!list.length)return '<div class="wk-exp-more">'+t('rpNoData')+'</div>';
     return list.map(function(p){
       const pc=Math.round(p[1]/list[0][1]*100);
-      return '<div class="rp-hbar" '+fn(p)+' style="cursor:pointer"><span class="rp-hbar-n">'+p[0]+'</span>'
-        +'<span class="rp-hbar-t"><span class="rp-hbar-f" style="width:'+pc+'%"></span></span>'
+      return '<div class="rp-hbar" '+fn(p)+' style="cursor:pointer"><span class="rp-hbar-nm">'+p[0]+'</span>'
+        +'<div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+Math.max(2,pc)+'%"></div></div>'
         +'<span class="rp-hbar-v">'+fmtM(p[1])+'</span></div>';
     }).join('');
   };
