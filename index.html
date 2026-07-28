@@ -1159,7 +1159,7 @@ body.print-formal .formal,body:has(.formal.show) .formal{display:block!important
       <div class="rep-title" id="repTitle">Sales report</div>
       <div class="rep-acts">
         <button class="rep-ic" onclick="sendBossReport()" aria-label="Share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
-        <button class="rep-ic" onclick="printReport()" aria-label="Download PDF"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
+        <button class="rep-ic" onclick="openReportPdf()" aria-label="Download PDF"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
       </div>
     </div>
     <div id="reportBody"></div>
@@ -1467,12 +1467,25 @@ body.print-formal .formal,body:has(.formal.show) .formal{display:block!important
       <div class="cust-filter" id="ktChips" style="flex-wrap:wrap;margin-bottom:6px"></div>
       <div class="field-hint" id="ktCount" style="margin-bottom:10px"></div>
       <canvas id="ktCanvas" width="1080" height="1350" style="display:none"></canvas>
+      <canvas id="rpCanvas" width="1080" height="1528" style="display:none"></canvas>
       <div style="display:flex;gap:8px">
         <button class="btn btn-wa" id="ktShareBtn" style="flex:1.4;padding:12px" onclick="shareKatalogi()">Send katalogi</button>
         <button class="btn btn-formal" id="ktSaveBtn" style="flex:1;padding:12px" onclick="saveKatalogi()">Save pages</button>
       </div>
       <div class="field-hint" id="ktHint" style="margin-top:8px;text-align:center"></div>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="rpOverlay">
+  <div class="sheet" style="max-width:420px;min-height:0">
+    <div class="sheet-head"><div><h2 id="rpTitle">Business review</h2><div class="sheet-sub" id="rpSub">A report you can send to anyone</div></div>
+      <button class="icon-btn" onclick="hide('rpOverlay')" aria-label="Close">&#10005;</button></div>
+    <div class="set-field"><label id="rpPeriodLbl">Period</label>
+      <div class="cust-filter" id="rpPeriods" style="flex-wrap:wrap;margin:0"></div></div>
+    <div id="rpSummary" class="field-hint" style="margin:10px 0 14px"></div>
+    <button class="btn btn-primary" id="rpGoBtn" onclick="shareReport()" style="width:100%;margin-bottom:8px">Generate PDF</button>
+    <button class="btn btn-ghost" id="rpSaveBtn" onclick="saveReport()" style="width:100%">Save to phone</button>
   </div>
 </div>
 
@@ -1789,7 +1802,7 @@ const LANG = {
    thamt:"Amount (TSh)",totcaps:"TOTAL",fnote:"Prices in Tanzanian Shillings (TSh). Quote valid for 7 days from the date above.",
    fnote2:"Generated with Fundi Sales.",editbiz:"Edit business details",items:"items",item:"item",lines:"lines",
    wareply:"Asante! Reply *SAWA* to confirm your order.",waquotefor:"Quote for:",copied:"Copied",
-   clearc:"Clear the whole quote?",pprice:"Price per item for",bizname:"Business name:",bizaddr:"Address / location:",bizphone:"Phone line:",storageFull:"Phone storage is full — that did not save. Free up space.",discPct:"Discount ({n}%)",fnoteCur:"Prices in Tanzanian Shillings (TSh).",fnoteValid:"Quote valid for 7 days from the date above.",qContact:"Contact",repMobile:"Your mobile (shown on quotes)",choosecust:"Choose customer",custsearch:"Search customers…",newcust:"Add customer",use:"Use",selcust:"Select customer",greet:"Habari, Pauline",attention:"Needs your attention",al1:"3 quotes waiting on a reply",al2:"2 Temeke orders ready to group",al3:"8 days left to reach 20M target",todayplan:"Today's plan",s1:"Morning check-ins — message 10 key customers",s2:"Follow up 3 pending quotes",s3:"Call Kariakoo Building Materials — reorder",s4:"Build quotes from replies",s5:"Group deliveries by area",s6:"Log sales, plan tomorrow",monthtarget:"Monthly target",tofirst:"{x} to your first bonus (~TSh {y} at 20M)",bonusnow:"Bonus so far: TSh {z} ({r}%)",navhome:"Home",navorders:"Orders",navProducts:"Products",payPaid:"Paid",payUnpaid:"On delivery",ordCollected:"Collected",ordOutstanding:"To collect",ordTotalLbl:"Total sales",payReward:"Delivered — TSh {n} collected!",saveBtn:"Save",cancelBtn:"Cancel",yesBtn:"Yes",calcNeedBoth:"Enter the order value and delivery quote first.",confirmLostMsg:"Mark this quote as lost? It will be removed from follow-ups.",undoLbl:"UNDO",undoOrderMsg:"Order recorded",undone:"Undone",schedToday:"Today",schedTomorrow:"Tomorrow",schedPickDate:"Pick date",schedFor:"Scheduled for {d}",unscheduled:"Not scheduled",delivItems:"{n} items",delivExpand:"View items",delivScheduled:"Scheduled",delivUnscheduled:"Unscheduled",delivDue:"due today",delivMarkDone:"Mark delivered",delivered:"Delivered",delivNone:"No orders to deliver",confirmReplyMsg:"Hello {name}, your order of TSh {total} is confirmed. We will deliver and collect payment on delivery. Thank you for your business! — {biz}",invoiceTitle:"INVOICE",invPayDue:"Payment due on delivery",invNo:"Invoice",sendConfirmWA:"Confirm to customer",viewInvoice:"View invoice",navSettings:"Settings",navCustomers:"Customers",moneyShow:"Show",moneyHide:"Hide",menuTerms:"Terms & conditions",menuLegal:"Legal & privacy",menuSignOut:"Sign out",signOutAsk:"Sign out of Fundi Sales?",signOutYes:"Sign out",signOutNo:"Stay",signedOut:"Signed out",setEmailLbl:"Email",setCompanyTitle:"Company",setCoNameLbl:"Company name",setCoAreaLbl:"Location / area",setCoTinLbl:"TIN (for invoices)",setBossLbl2:"Reporting contact (boss)",bossHint:"Monthly reports are sent to this number",setCardTitle:"Digital business card",cardRecipLbl:"Send to (WhatsApp number)",sendCardTxt:"Send",setSecTitle:"Security",pinLbl:"App PIN lock",pinHint:"6-digit PIN required to open the app",changePinTxt:"Change PIN",secNote:"Your data lives only on this phone. The PIN protects the app if someone borrows your phone — keep your phone lock on too.",verifiedTxt:"Verified",pendingTxt:"Pending",enterPin:"Enter PIN",setPin:"Set your PIN",confirmPin:"Confirm PIN",wrongPin:"Wrong PIN — try again",pinMismatch:"PINs didn\u2019t match — start again",pinSet:"PIN enabled",pinOff:"PIN disabled",pinForgotMsg:"Forgot PIN? The only reset is wiping app data (Settings are on this device only). Wipe and start fresh?",pinForgotYes:"Wipe data",pinCooldown:"Too many attempts \u2014 wait {s}s",animLbl:"Animations",animAuto:"Auto",animOn:"On",animOff:"Off",animHint:"Auto matches your phone\u2019s power",ncModeNew:"New customer",ncModeWalk:"Walk-in sale",custNamePh:"Customer name *",phoneReqPh:"Phone +255\u2026 *",bizOptPh:"Business / shop name (optional)",walkNamePh:"Name (optional)",walkPhonePh:"Phone (optional)",useForSale:"Use for this sale",ncSave:"Save & select",needNamePhone:"Customer name and phone are required",walkinCust:"Walk-in customer",subtotal:"Subtotal",discReg:"Customer discount (\u221210%)",discVip:"VIP discount (\u221215%)",discHint:"Saved customers get 10% off \u00b7 VIP 15% \u00b7 walk-ins pay full price",optReg:"Regular \u00b7 \u221210%",optVip:"VIP \u00b7 \u221215%",addPhoto:"Tap to add your photo",changePhoto:"Tap to change your photo",removePhoto:"Remove photo",photoSaved:"Photo saved \u2014 looking sharp",photoBig:"Photo too large \u2014 try another",dateTitle:"Delivery date",dateSet:"Set date",datePickEmpty:"Choose a date first",cardStyleTitle:"Card style",cardStyleHint:"Tap the card to change its style",style_classic:"Classic",style_sunset:"Sunset",style_forest:"Forest",style_ocean:"Ocean",style_noir:"Noir",tplLbl:"Home style",tplHint:"Leo shows your day as a to-do stream",leoTitle:"Leo \u2014 your day",leoConfirm:"{c} said yes",leoConfirmSub:"Confirm the order before it cools",leoGreet:"Morning round \u2014 {n} customers",leoGreetSub:"Habari first, business follows",leoDeliv:"{n} deliveries to arrange",leoDelivSub:"Keep the promises",leoFu:"{n} quotes waiting for an answer",leoFuSub:"A nudge wins deals",leoGreetPrime:"Habari hour \u2014 shops are opening",leoNOrders:"{n} orders",pAdd:"+ New shop",pEmpty:"Spot a shop on your route? Add it \u2014 five steps to a customer",pDays:"{n} days in stage",pst_mgeni:"mgeni",pst_talked:"talked",pst_katalogi:"catalogue",pst_quote:"quote",pst_mteja:"mteja",paName:"Shop name",paArea:"Area",paPhone:"Phone (optional)",paSave:"Add to pipeline",paNeedName:"Name first",paSaved:"Added \u2014 go greet them",pAdvanced:"Pipeline moved forward",pxKt:"Send catalogue",pxWon:"Won \u2014 make customer",pxDel:"Remove",pxDelAsk:"Remove this shop from the pipeline?",pWonMsg:"{c} is now your customer!",leoP:"{c} is waiting",leoPSub:"{s} for {n} days \u00b7 make a move",custViewC:"Customers",custViewP:"New shops",thTitle:"The story",thQuote:"Quote sent",thQuoteWait:"waiting",thQuoteYes:"accepted",thBei:"price held to {d}",thOrder:"Order confirmed",thDeliv:"delivery {d}",thRemind:"Reminder ready \u2014 tap to send",thRhythm:"Buys every ~{g} days",thDueNow:"due about now",thGreetBtn:"Greet on WhatsApp",thQuoteBtn:"New quote",ktTitle:"Catalogue",ktSubTxt:"Send your range to a new shop",ktToLbl:"Who is it for? (optional)",ktToPh:"e.g. Mwenge Hardware",ktToAny:"Nobody in particular",ktNoPhone:"no phone",ktScopeLbl:"What do they see?",ktAll:"Full range",ktCount:"{n} products \u00b7 cover + price pages",ktShare:"Send catalogue",ktSave:"Save PDF",ktHint:"Sends as one PDF \u2014 easy to forward on WhatsApp",ktCoverTitle:"Product catalogue",ktCoverItems:"{n} products",ktProof:"{n} orders completed with Fundi",ktValid:"Prices correct as at {d}",ktDisc1:"Subject to change without notice \u2014 please confirm before ordering.",ktDisc2:"Availability may vary. We will always tell you before anything changes.",ktFoot:"Prices as at {d} \u00b7 subject to change",ktGreet:"Habari {to}! Nimekuletea katalogi yetu \u2014 bei za leo, nimezihifadhi hadi {d}. Nikipata oda, nafikisha haraka. Karibu sana! \u2014 {biz}",ktFriend:"rafiki",ktNudge:"Habari {to}! Uliipata katalogi yangu? Niko tayari kukuhudumia \u2014 {biz}",ktSent:"Catalogue on its way",ktSaved:"Pages saved",leoKt:"{c} \u2014 catalogue went quiet",leoKtSub:"sent {n} days ago \u00b7 nudge now",menuKatalogi:"Catalogue",leoDone:"Day done \u2014 kazi nzuri!",leoDoneSub:"TSh {v} moved today",commLbl:"Commission rate (%)",commHint:"Your cut of each confirmed order \u2014 shown only to you",commLine:"Yours this month: TSh {v}",beiLeo:"Today\u2019s price \u2014 held for you until {d}",pinForgotNo:"Go back",roleDefault:"Sales Executive",settingsTitle:"Settings",profileTitle:"My profile",repName:"Your name",repPhone:"Your phone",bossPhone:"Boss phone (for reports)",darkMode:"Dark mode",langLabel:"Language",perfTitle:"My performance",perfSales:"Total sales",perfOrders:"Orders closed",perfAvg:"Avg order value",perfWon:"Win rate",perfCommission:"Est. commission",perfThisMonth:"This month",perfAllTime:"All time",exportCSV:"Export CSV",exportPDF:"Export PDF report",vsLast:"vs last month",dailyLbl:"Daily",weeklyLbl:"Weekly",ordersInWeek:"{n} orders · TSh {v}",moreOrders:"+ {n} more",bestWeek:"best week",noOrdersWeek:"No orders this week",custProfile:"Customer profile",custLifetime:"Lifetime spend",custOrderCount:"Orders",custAvgOrder:"Avg order",custLastOrder:"Last order",custHistory:"Order history",custBuys:"What they buy",custDaysAgo:"{n} days ago",custToday:"Today",custCall:"Call",custMessage:"Message",custWinRate:"Win rate",custNoOrders:"No orders yet",ceTitle:"Edit customer",ceSub:"Update their details",ceBiz:"Business name",cePerson:"Contact person",cePhone:"Phone",ceArea:"Area",ceTier:"Tier",ceSave:"Save changes",ceDelete:"Delete customer",ceEditBtn:"Edit details",ceSaved:"Customer updated",ceDelAsk:"Delete {n}? Their past orders stay in your records.",ceDeleted:"{n} deleted",ceMissing:"Customer not found",optRegPlain:"Regular",wonTitle:"Quotes won",lostTitle:"Quotes lost",wonValue:"Total won value",lostValue:"Total lost value",wonByCust:"Won by customer",lostByCust:"Lost by customer",wonByCat:"Won by category",lostByCat:"Lost by category — where we\'re weak",timeToClose:"Avg time to close",sameDay:"Same day",nextDay:"Next day",twoPlusDays:"2+ days",lostVsWon:"Lost quote size vs won",avgLostQuote:"Avg lost quote",avgWonQuote:"Avg won quote",responseLag:"Follow-up speed on lost quotes",within1Day:"Followed up within 1 day",after2Days:"Followed up after 2+ days",lagInsight:"Most lost quotes had slow follow-up",sizeInsight:"Similar size — suggests competition, not pricing",thisMonth:"this month",backToReport:"Back to report",saleTitle:"Sale detail",saleCustomer:"Customer",saleDate:"Date",saleItems:"Items",viewCustBtn:"View customer profile",daySummary:"{n} orders · {v}",pickDay:"Pick a day",ciAllDone:"All customers greeted!",ciAllDoneSub:"Great start to the day — the round resets tomorrow morning.",ciGreetedSec:"Greeted ({n})",backHome:"Back to Home",catTitle:"Category detail",areaTitle:"Area detail",areasLbl:"Sales by area",productsIn:"Products in this category",buyersLbl:"Who buys it",qtySold:"{n} sold",custIn:"Customers in {a}",ordersIn:"{n} orders",recTitle:"Personal records",recBigSale:"Biggest single sale",recBestDay:"Best day ever",recBestWeek:"Best week",recMostDay:"Most orders in a day",recTopCust:"Biggest customer",recOrders:"{n} orders",savedMsg:"Saved",reviewTitle:"Review order",reviewConfirm:"Confirm order",reviewReject:"Reject order",rejectAsk:"Are you sure you want to cancel this order? The customer will not be notified automatically.",rejectConfirm:"Yes, cancel it",rejectBack:"Keep it",orderCancelled:"Order cancelled",resetData:"Reset demo data",resetConfirm:"Reset all demo data? This will reload the app.",demoTip:"You're exploring with demo data — tap anything, nothing breaks. Refresh to reset.",gotIt:"Got it",nomatch:"No customers match your search",
+   clearc:"Clear the whole quote?",pprice:"Price per item for",bizname:"Business name:",bizaddr:"Address / location:",bizphone:"Phone line:",rpTitle:"Business review",rpSub:"A report you can send to anyone",rpPeriodLbl:"Period",rpGenerate:"Generate PDF",rpSave:"Save to phone",rpThisMonth:"This month",rpLastMonth:"Last month",rpQuarter:"Last 3 months",rpAllTime:"All time",rpCoverKicker:"Business review",rpCoverOrders:"{n} orders · {c} customers",rpTotalSales:"Total sales",rpP2Title:"Sales performance",rpP3Title:"Customers",rpP4Title:"Products & categories",rpP5Title:"Collections",rpTrendW:"Last {n} weeks",rpTrendM:"Last {n} months",rpPipeline:"Quotes won, lost and open",rpTopCust:"Top customers",rpByArea:"Sales by area",rpByCat:"Share by category",rpTopProd:"Top products",rpPageOf:"Page {n} of {t}",rpNoData:"No data for this period",rpOther:"Other",rpDone:"Report ready",rpShareTxt:"Business review — {biz}",rpSummary:"{n} orders · {v} · {c} customers",storageFull:"Phone storage is full — that did not save. Free up space.",discPct:"Discount ({n}%)",fnoteCur:"Prices in Tanzanian Shillings (TSh).",fnoteValid:"Quote valid for 7 days from the date above.",qContact:"Contact",repMobile:"Your mobile (shown on quotes)",choosecust:"Choose customer",custsearch:"Search customers…",newcust:"Add customer",use:"Use",selcust:"Select customer",greet:"Habari, Pauline",attention:"Needs your attention",al1:"3 quotes waiting on a reply",al2:"2 Temeke orders ready to group",al3:"8 days left to reach 20M target",todayplan:"Today's plan",s1:"Morning check-ins — message 10 key customers",s2:"Follow up 3 pending quotes",s3:"Call Kariakoo Building Materials — reorder",s4:"Build quotes from replies",s5:"Group deliveries by area",s6:"Log sales, plan tomorrow",monthtarget:"Monthly target",tofirst:"{x} to your first bonus (~TSh {y} at 20M)",bonusnow:"Bonus so far: TSh {z} ({r}%)",navhome:"Home",navorders:"Orders",navProducts:"Products",payPaid:"Paid",payUnpaid:"On delivery",ordCollected:"Collected",ordOutstanding:"To collect",ordTotalLbl:"Total sales",payReward:"Delivered — TSh {n} collected!",saveBtn:"Save",cancelBtn:"Cancel",yesBtn:"Yes",calcNeedBoth:"Enter the order value and delivery quote first.",confirmLostMsg:"Mark this quote as lost? It will be removed from follow-ups.",undoLbl:"UNDO",undoOrderMsg:"Order recorded",undone:"Undone",schedToday:"Today",schedTomorrow:"Tomorrow",schedPickDate:"Pick date",schedFor:"Scheduled for {d}",unscheduled:"Not scheduled",delivItems:"{n} items",delivExpand:"View items",delivScheduled:"Scheduled",delivUnscheduled:"Unscheduled",delivDue:"due today",delivMarkDone:"Mark delivered",delivered:"Delivered",delivNone:"No orders to deliver",confirmReplyMsg:"Hello {name}, your order of TSh {total} is confirmed. We will deliver and collect payment on delivery. Thank you for your business! — {biz}",invoiceTitle:"INVOICE",invPayDue:"Payment due on delivery",invNo:"Invoice",sendConfirmWA:"Confirm to customer",viewInvoice:"View invoice",navSettings:"Settings",navCustomers:"Customers",moneyShow:"Show",moneyHide:"Hide",menuTerms:"Terms & conditions",menuLegal:"Legal & privacy",menuSignOut:"Sign out",signOutAsk:"Sign out of Fundi Sales?",signOutYes:"Sign out",signOutNo:"Stay",signedOut:"Signed out",setEmailLbl:"Email",setCompanyTitle:"Company",setCoNameLbl:"Company name",setCoAreaLbl:"Location / area",setCoTinLbl:"TIN (for invoices)",setBossLbl2:"Reporting contact (boss)",bossHint:"Monthly reports are sent to this number",setCardTitle:"Digital business card",cardRecipLbl:"Send to (WhatsApp number)",sendCardTxt:"Send",setSecTitle:"Security",pinLbl:"App PIN lock",pinHint:"6-digit PIN required to open the app",changePinTxt:"Change PIN",secNote:"Your data lives only on this phone. The PIN protects the app if someone borrows your phone — keep your phone lock on too.",verifiedTxt:"Verified",pendingTxt:"Pending",enterPin:"Enter PIN",setPin:"Set your PIN",confirmPin:"Confirm PIN",wrongPin:"Wrong PIN — try again",pinMismatch:"PINs didn\u2019t match — start again",pinSet:"PIN enabled",pinOff:"PIN disabled",pinForgotMsg:"Forgot PIN? The only reset is wiping app data (Settings are on this device only). Wipe and start fresh?",pinForgotYes:"Wipe data",pinCooldown:"Too many attempts \u2014 wait {s}s",animLbl:"Animations",animAuto:"Auto",animOn:"On",animOff:"Off",animHint:"Auto matches your phone\u2019s power",ncModeNew:"New customer",ncModeWalk:"Walk-in sale",custNamePh:"Customer name *",phoneReqPh:"Phone +255\u2026 *",bizOptPh:"Business / shop name (optional)",walkNamePh:"Name (optional)",walkPhonePh:"Phone (optional)",useForSale:"Use for this sale",ncSave:"Save & select",needNamePhone:"Customer name and phone are required",walkinCust:"Walk-in customer",subtotal:"Subtotal",discReg:"Customer discount (\u221210%)",discVip:"VIP discount (\u221215%)",discHint:"Saved customers get 10% off \u00b7 VIP 15% \u00b7 walk-ins pay full price",optReg:"Regular \u00b7 \u221210%",optVip:"VIP \u00b7 \u221215%",addPhoto:"Tap to add your photo",changePhoto:"Tap to change your photo",removePhoto:"Remove photo",photoSaved:"Photo saved \u2014 looking sharp",photoBig:"Photo too large \u2014 try another",dateTitle:"Delivery date",dateSet:"Set date",datePickEmpty:"Choose a date first",cardStyleTitle:"Card style",cardStyleHint:"Tap the card to change its style",style_classic:"Classic",style_sunset:"Sunset",style_forest:"Forest",style_ocean:"Ocean",style_noir:"Noir",tplLbl:"Home style",tplHint:"Leo shows your day as a to-do stream",leoTitle:"Leo \u2014 your day",leoConfirm:"{c} said yes",leoConfirmSub:"Confirm the order before it cools",leoGreet:"Morning round \u2014 {n} customers",leoGreetSub:"Habari first, business follows",leoDeliv:"{n} deliveries to arrange",leoDelivSub:"Keep the promises",leoFu:"{n} quotes waiting for an answer",leoFuSub:"A nudge wins deals",leoGreetPrime:"Habari hour \u2014 shops are opening",leoNOrders:"{n} orders",pAdd:"+ New shop",pEmpty:"Spot a shop on your route? Add it \u2014 five steps to a customer",pDays:"{n} days in stage",pst_mgeni:"mgeni",pst_talked:"talked",pst_katalogi:"catalogue",pst_quote:"quote",pst_mteja:"mteja",paName:"Shop name",paArea:"Area",paPhone:"Phone (optional)",paSave:"Add to pipeline",paNeedName:"Name first",paSaved:"Added \u2014 go greet them",pAdvanced:"Pipeline moved forward",pxKt:"Send catalogue",pxWon:"Won \u2014 make customer",pxDel:"Remove",pxDelAsk:"Remove this shop from the pipeline?",pWonMsg:"{c} is now your customer!",leoP:"{c} is waiting",leoPSub:"{s} for {n} days \u00b7 make a move",custViewC:"Customers",custViewP:"New shops",thTitle:"The story",thQuote:"Quote sent",thQuoteWait:"waiting",thQuoteYes:"accepted",thBei:"price held to {d}",thOrder:"Order confirmed",thDeliv:"delivery {d}",thRemind:"Reminder ready \u2014 tap to send",thRhythm:"Buys every ~{g} days",thDueNow:"due about now",thGreetBtn:"Greet on WhatsApp",thQuoteBtn:"New quote",ktTitle:"Catalogue",ktSubTxt:"Send your range to a new shop",ktToLbl:"Who is it for? (optional)",ktToPh:"e.g. Mwenge Hardware",ktToAny:"Nobody in particular",ktNoPhone:"no phone",ktScopeLbl:"What do they see?",ktAll:"Full range",ktCount:"{n} products \u00b7 cover + price pages",ktShare:"Send catalogue",ktSave:"Save PDF",ktHint:"Sends as one PDF \u2014 easy to forward on WhatsApp",ktCoverTitle:"Product catalogue",ktCoverItems:"{n} products",ktProof:"{n} orders completed with Fundi",ktValid:"Prices correct as at {d}",ktDisc1:"Subject to change without notice \u2014 please confirm before ordering.",ktDisc2:"Availability may vary. We will always tell you before anything changes.",ktFoot:"Prices as at {d} \u00b7 subject to change",ktGreet:"Habari {to}! Nimekuletea katalogi yetu \u2014 bei za leo, nimezihifadhi hadi {d}. Nikipata oda, nafikisha haraka. Karibu sana! \u2014 {biz}",ktFriend:"rafiki",ktNudge:"Habari {to}! Uliipata katalogi yangu? Niko tayari kukuhudumia \u2014 {biz}",ktSent:"Catalogue on its way",ktSaved:"Pages saved",leoKt:"{c} \u2014 catalogue went quiet",leoKtSub:"sent {n} days ago \u00b7 nudge now",menuKatalogi:"Catalogue",leoDone:"Day done \u2014 kazi nzuri!",leoDoneSub:"TSh {v} moved today",commLbl:"Commission rate (%)",commHint:"Your cut of each confirmed order \u2014 shown only to you",commLine:"Yours this month: TSh {v}",beiLeo:"Today\u2019s price \u2014 held for you until {d}",pinForgotNo:"Go back",roleDefault:"Sales Executive",settingsTitle:"Settings",profileTitle:"My profile",repName:"Your name",repPhone:"Your phone",bossPhone:"Boss phone (for reports)",darkMode:"Dark mode",langLabel:"Language",perfTitle:"My performance",perfSales:"Total sales",perfOrders:"Orders closed",perfAvg:"Avg order value",perfWon:"Win rate",perfCommission:"Est. commission",perfThisMonth:"This month",perfAllTime:"All time",exportCSV:"Export CSV",exportPDF:"Export PDF report",vsLast:"vs last month",dailyLbl:"Daily",weeklyLbl:"Weekly",ordersInWeek:"{n} orders · TSh {v}",moreOrders:"+ {n} more",bestWeek:"best week",noOrdersWeek:"No orders this week",custProfile:"Customer profile",custLifetime:"Lifetime spend",custOrderCount:"Orders",custAvgOrder:"Avg order",custLastOrder:"Last order",custHistory:"Order history",custBuys:"What they buy",custDaysAgo:"{n} days ago",custToday:"Today",custCall:"Call",custMessage:"Message",custWinRate:"Win rate",custNoOrders:"No orders yet",ceTitle:"Edit customer",ceSub:"Update their details",ceBiz:"Business name",cePerson:"Contact person",cePhone:"Phone",ceArea:"Area",ceTier:"Tier",ceSave:"Save changes",ceDelete:"Delete customer",ceEditBtn:"Edit details",ceSaved:"Customer updated",ceDelAsk:"Delete {n}? Their past orders stay in your records.",ceDeleted:"{n} deleted",ceMissing:"Customer not found",optRegPlain:"Regular",wonTitle:"Quotes won",lostTitle:"Quotes lost",wonValue:"Total won value",lostValue:"Total lost value",wonByCust:"Won by customer",lostByCust:"Lost by customer",wonByCat:"Won by category",lostByCat:"Lost by category — where we\'re weak",timeToClose:"Avg time to close",sameDay:"Same day",nextDay:"Next day",twoPlusDays:"2+ days",lostVsWon:"Lost quote size vs won",avgLostQuote:"Avg lost quote",avgWonQuote:"Avg won quote",responseLag:"Follow-up speed on lost quotes",within1Day:"Followed up within 1 day",after2Days:"Followed up after 2+ days",lagInsight:"Most lost quotes had slow follow-up",sizeInsight:"Similar size — suggests competition, not pricing",thisMonth:"this month",backToReport:"Back to report",saleTitle:"Sale detail",saleCustomer:"Customer",saleDate:"Date",saleItems:"Items",viewCustBtn:"View customer profile",daySummary:"{n} orders · {v}",pickDay:"Pick a day",ciAllDone:"All customers greeted!",ciAllDoneSub:"Great start to the day — the round resets tomorrow morning.",ciGreetedSec:"Greeted ({n})",backHome:"Back to Home",catTitle:"Category detail",areaTitle:"Area detail",areasLbl:"Sales by area",productsIn:"Products in this category",buyersLbl:"Who buys it",qtySold:"{n} sold",custIn:"Customers in {a}",ordersIn:"{n} orders",recTitle:"Personal records",recBigSale:"Biggest single sale",recBestDay:"Best day ever",recBestWeek:"Best week",recMostDay:"Most orders in a day",recTopCust:"Biggest customer",recOrders:"{n} orders",savedMsg:"Saved",reviewTitle:"Review order",reviewConfirm:"Confirm order",reviewReject:"Reject order",rejectAsk:"Are you sure you want to cancel this order? The customer will not be notified automatically.",rejectConfirm:"Yes, cancel it",rejectBack:"Keep it",orderCancelled:"Order cancelled",resetData:"Reset demo data",resetConfirm:"Reset all demo data? This will reload the app.",demoTip:"You're exploring with demo data — tap anything, nothing breaks. Refresh to reset.",gotIt:"Got it",nomatch:"No customers match your search",
  moneyTitle:"This month",sloganTxt:"You sell, we do the rest",tapReport:"Tap for full report",
  moneyToBonus:"TSh {x} to your first bonus",moneyBonusNow:"Earning {r}% bonus — TSh {z} so far",
  urgentConfirm:"{c} said yes — confirm order",
@@ -1810,7 +1823,7 @@ const LANG = {
    thamt:"Jumla (TSh)",totcaps:"JUMLA",fnote:"Bei ni kwa Shilingi za Tanzania (TSh). Kadirio ni halali kwa siku 7 kuanzia tarehe iliyo hapo juu.",
    fnote2:"Imetengenezwa na Fundi Sales.",editbiz:"Hariri taarifa za biashara",items:"bidhaa",item:"bidhaa",lines:"aina",
    wareply:"Asante! Jibu *SAWA* kuthibitisha oda yako.",waquotefor:"Kadirio kwa:",copied:"Imenakiliwa",
-   clearc:"Futa kadirio lote?",pprice:"Bei kwa kila kimoja cha",bizname:"Jina la biashara:",bizaddr:"Anwani / mahali:",bizphone:"Namba ya simu:",storageFull:"Hifadhi ya simu imejaa — hilo halijahifadhiwa. Futa nafasi.",discPct:"Punguzo la asilimia {n}",fnoteCur:"Bei ni kwa Shilingi za Tanzania (TSh).",fnoteValid:"Kadirio hili ni halali kwa siku 7 kuanzia tarehe iliyo hapo juu.",qContact:"Mawasiliano",repMobile:"Simu yako (inaonekana kwenye kadirio)",choosecust:"Chagua mteja",custsearch:"Tafuta wateja…",newcust:"Ongeza mteja",use:"Tumia",selcust:"Chagua mteja",greet:"Habari, Pauline",attention:"Yanayohitaji uangalizi",al1:"Kadirio 3 yanasubiri majibu",al2:"Oda 2 za Temeke tayari kuunganishwa",al3:"Siku 8 zimebaki kufikia lengo la 20M",todayplan:"Ratiba ya leo",s1:"Salamu za asubuhi — tuma ujumbe kwa wateja 10 muhimu",s2:"Fuatilia kadirio 3 yaliyosubiri",s3:"Piga simu Kariakoo Building Materials — oda mpya",s4:"Tengeneza kadirio kutoka majibu",s5:"Panga usafirishaji kwa maeneo",s6:"Ingiza mauzo, panga kesho",monthtarget:"Lengo la mwezi",tofirst:"{x} kufikia bonasi ya kwanza (~TSh {y} kwa 20M)",bonusnow:"Bonasi hadi sasa: TSh {z} ({r}%)",navhome:"Nyumbani",navorders:"Oda",navProducts:"Bidhaa",payPaid:"Imelipwa",payUnpaid:"Wakati wa kufikisha",ordCollected:"Zilizolipwa",ordOutstanding:"Za kukusanya",ordTotalLbl:"Jumla ya mauzo",payReward:"Imefikishwa — TSh {n} zimekusanywa!",saveBtn:"Hifadhi",cancelBtn:"Ghairi",yesBtn:"Ndiyo",calcNeedBoth:"Ingiza thamani ya oda na bei ya usafirishaji kwanza.",confirmLostMsg:"Weka kadirio hili kama limekosa? Litaondolewa kwenye ufuatiliaji.",undoLbl:"TENGUA",undoOrderMsg:"Oda imerekodiwa",undone:"Imetenguliwa",schedToday:"Leo",schedTomorrow:"Kesho",schedPickDate:"Chagua tarehe",schedFor:"Imepangwa {d}",unscheduled:"Haijapangwa",delivItems:"Bidhaa {n}",delivExpand:"Angalia bidhaa",delivScheduled:"Imepangwa",delivUnscheduled:"Haijapangwa",delivDue:"inatarajiwa leo",delivMarkDone:"Weka imefikishwa",delivered:"Imefikishwa",delivNone:"Hakuna oda za kupeleka",confirmReplyMsg:"Habari {name}, oda yako ya TSh {total} imethibitishwa. Tutafikisha na kukusanya malipo wakati wa uwasilishaji. Asante kwa biashara yako! — {biz}",invoiceTitle:"ANKARA",invPayDue:"Malipo yalipwe wakati wa uwasilishaji",invNo:"Ankara",sendConfirmWA:"Thibitisha kwa mteja",viewInvoice:"Angalia ankara",navSettings:"Mipangilio",navCustomers:"Wateja",moneyShow:"Onyesha",moneyHide:"Ficha",menuTerms:"Vigezo na masharti",menuLegal:"Kisheria na faragha",menuSignOut:"Toka",signOutAsk:"Unataka kutoka Fundi Sales?",signOutYes:"Toka",signOutNo:"Baki",signedOut:"Umetoka",setEmailLbl:"Barua pepe",setCompanyTitle:"Kampuni",setCoNameLbl:"Jina la kampuni",setCoAreaLbl:"Mahali / eneo",setCoTinLbl:"TIN (kwa ankara)",setBossLbl2:"Mawasiliano ya ripoti (bosi)",bossHint:"Ripoti za mwezi hutumwa kwa namba hii",setCardTitle:"Kadi ya biashara ya kidijitali",cardRecipLbl:"Tuma kwa (namba ya WhatsApp)",sendCardTxt:"Tuma",setSecTitle:"Usalama",pinLbl:"PIN ya kufungua app",pinHint:"PIN ya tarakimu 6 inahitajika kufungua app",changePinTxt:"Badilisha PIN",secNote:"Data yako iko kwenye simu hii tu. PIN inalinda app kama mtu ataazima simu yako — weka pia kufuli ya simu.",verifiedTxt:"Imethibitishwa",pendingTxt:"Inasubiri",enterPin:"Weka PIN",setPin:"Weka PIN yako",confirmPin:"Thibitisha PIN",wrongPin:"PIN si sahihi — jaribu tena",pinMismatch:"PIN hazikufanana — anza upya",pinSet:"PIN imewashwa",pinOff:"PIN imezimwa",pinForgotMsg:"Umesahau PIN? Njia pekee ni kufuta data ya app (data iko kwenye simu hii tu). Futa na uanze upya?",pinForgotYes:"Futa data",pinCooldown:"Majaribio mengi mno \u2014 subiri sekunde {s}",animLbl:"Michoro ya mwendo",animAuto:"Otomatiki",animOn:"Washa",animOff:"Zima",animHint:"Otomatiki hulingana na uwezo wa simu yako",ncModeNew:"Mteja mpya",ncModeWalk:"Mauzo ya papo hapo",custNamePh:"Jina la mteja *",phoneReqPh:"Simu +255\u2026 *",bizOptPh:"Jina la biashara (hiari)",walkNamePh:"Jina (hiari)",walkPhonePh:"Simu (hiari)",useForSale:"Tumia kwa mauzo haya",ncSave:"Hifadhi na uchague",needNamePhone:"Jina la mteja na simu vinahitajika",walkinCust:"Mteja wa papo hapo",subtotal:"Jumla ndogo",discReg:"Punguzo la mteja (\u221210%)",discVip:"Punguzo la VIP (\u221215%)",discHint:"Wateja waliohifadhiwa hupata punguzo 10% \u00b7 VIP 15% \u00b7 wapita-njia hulipa bei kamili",optReg:"Kawaida \u00b7 \u221210%",optVip:"VIP \u00b7 \u221215%",addPhoto:"Gusa kuweka picha yako",changePhoto:"Gusa kubadili picha yako",removePhoto:"Ondoa picha",photoSaved:"Picha imehifadhiwa \u2014 unapendeza",photoBig:"Picha ni kubwa mno \u2014 jaribu nyingine",dateTitle:"Tarehe ya usafirishaji",dateSet:"Weka tarehe",datePickEmpty:"Chagua tarehe kwanza",cardStyleTitle:"Muundo wa kadi",cardStyleHint:"Gusa kadi kubadili muundo wake",style_classic:"Asili",style_sunset:"Machweo",style_forest:"Msitu",style_ocean:"Bahari",style_noir:"Nyeusi",tplLbl:"Muundo wa mwanzo",tplHint:"Leo huonyesha siku yako kama orodha ya kazi",leoTitle:"Leo \u2014 siku yako",leoConfirm:"{c} amekubali",leoConfirmSub:"Thibitisha oda kabla haijapoa",leoGreet:"Mzunguko wa asubuhi \u2014 wateja {n}",leoGreetSub:"Habari kwanza, biashara inafuata",leoDeliv:"Usafirishaji {n} wa kupanga",leoDelivSub:"Tunza ahadi",leoFu:"Nukuu {n} zinasubiri jibu",leoFuSub:"Ukumbusho hushinda dili",leoGreetPrime:"Saa ya habari \u2014 maduka yanafunguliwa",leoNOrders:"oda {n}",pAdd:"+ Duka jipya",pEmpty:"Umeona duka njiani? Liongeze \u2014 hatua tano hadi mteja",pDays:"siku {n} hatua hii",pst_mgeni:"mgeni",pst_talked:"tumeongea",pst_katalogi:"katalogi",pst_quote:"nukuu",pst_mteja:"mteja",paName:"Jina la duka",paArea:"Eneo",paPhone:"Simu (hiari)",paSave:"Weka kwenye mstari",paNeedName:"Jina kwanza",paSaved:"Limeongezwa \u2014 nenda kusalimia",pAdvanced:"Mstari umesonga mbele",pxKt:"Tuma katalogi",pxWon:"Ameshinda \u2014 fanya mteja",pxDel:"Ondoa",pxDelAsk:"Ondoa duka hili kwenye mstari?",pWonMsg:"{c} sasa ni mteja wako!",leoP:"{c} anasubiri",leoPSub:"{s} kwa siku {n} \u00b7 fanya hatua",custViewC:"Wateja",custViewP:"Maduka mapya",thTitle:"Hadithi",thQuote:"Nukuu imetumwa",thQuoteWait:"inasubiri",thQuoteYes:"imekubaliwa",thBei:"bei hadi {d}",thOrder:"Oda imethibitishwa",thDeliv:"usafirishaji {d}",thRemind:"Ukumbusho tayari \u2014 gusa kutuma",thRhythm:"Hununua kila siku ~{g}",thDueNow:"muda umefika",thGreetBtn:"Salimia WhatsApp",thQuoteBtn:"Nukuu mpya",ktTitle:"Katalogi",ktSubTxt:"Tuma bidhaa zako kwa duka jipya",ktToLbl:"Ni ya nani? (hiari)",ktToPh:"mf. Mwenge Hardware",ktToAny:"Hakuna mtu maalum",ktNoPhone:"hakuna simu",ktScopeLbl:"Waone nini?",ktAll:"Bidhaa zote",ktCount:"Bidhaa {n} \u00b7 jalada + kurasa za bei",ktShare:"Tuma katalogi",ktSave:"Hifadhi PDF",ktHint:"Inatumwa kama PDF moja \u2014 rahisi kutuma WhatsApp",ktCoverTitle:"Katalogi ya bidhaa",ktCoverItems:"Bidhaa {n}",ktProof:"Oda {n} zimekamilika kwa Fundi",ktValid:"Bei ni sahihi hadi {d}",ktDisc1:"Zinaweza kubadilika bila taarifa \u2014 tafadhali thibitisha kabla ya kuagiza.",ktDisc2:"Upatikanaji unaweza kutofautiana. Tutakujulisha kabla ya mabadiliko yoyote.",ktFoot:"Bei za {d} \u00b7 zinaweza kubadilika",ktGreet:"Habari {to}! Nimekuletea katalogi yetu \u2014 bei za leo, nimezihifadhi hadi {d}. Nikipata oda, nafikisha haraka. Karibu sana! \u2014 {biz}",ktFriend:"rafiki",ktNudge:"Habari {to}! Uliipata katalogi yangu? Niko tayari kukuhudumia \u2014 {biz}",ktSent:"Katalogi imetumwa",ktSaved:"Kurasa zimehifadhiwa",leoKt:"{c} \u2014 katalogi kimya",leoKtSub:"ilitumwa siku {n} \u00b7 kumbusha sasa",menuKatalogi:"Katalogi",leoDone:"Siku imekamilika \u2014 kazi nzuri!",leoDoneSub:"TSh {v} zimehamishwa leo",commLbl:"Kiwango cha kamisheni (%)",commHint:"Fungu lako la kila oda \u2014 unaiona wewe tu",commLine:"Yako mwezi huu: TSh {v}",beiLeo:"Bei ya leo \u2014 nimekuhifadhia hadi {d}",pinForgotNo:"Rudi",roleDefault:"Afisa Mauzo",settingsTitle:"Mipangilio",profileTitle:"Wasifu wangu",repName:"Jina lako",repPhone:"Simu yako",bossPhone:"Simu ya bosi (kwa ripoti)",darkMode:"Hali ya giza",langLabel:"Lugha",perfTitle:"Utendaji wangu",perfSales:"Mauzo jumla",perfOrders:"Oda zilizofungwa",perfAvg:"Wastani wa oda",perfWon:"Kiwango cha ushindi",perfCommission:"Kamisheni inayokadiriwa",perfThisMonth:"Mwezi huu",perfAllTime:"Wakati wote",exportCSV:"Hamisha CSV",exportPDF:"Hamisha ripoti PDF",vsLast:"vs mwezi uliopita",dailyLbl:"Kila siku",weeklyLbl:"Kila wiki",ordersInWeek:"Oda {n} · TSh {v}",moreOrders:"+ {n} zaidi",bestWeek:"wiki bora",noOrdersWeek:"Hakuna oda wiki hii",custProfile:"Wasifu wa mteja",custLifetime:"Matumizi jumla",custOrderCount:"Oda",custAvgOrder:"Wastani wa oda",custLastOrder:"Oda ya mwisho",custHistory:"Historia ya oda",custBuys:"Wanachonunua",custDaysAgo:"Siku {n} zilizopita",custToday:"Leo",custCall:"Piga simu",custMessage:"Tuma ujumbe",custWinRate:"Kiwango cha ushindi",custNoOrders:"Hakuna oda bado",ceTitle:"Hariri mteja",ceSub:"Sasisha taarifa zake",ceBiz:"Jina la biashara",cePerson:"Mtu wa mawasiliano",cePhone:"Simu",ceArea:"Eneo",ceTier:"Daraja",ceSave:"Hifadhi mabadiliko",ceDelete:"Futa mteja",ceEditBtn:"Hariri taarifa",ceSaved:"Mteja amesasishwa",ceDelAsk:"Futa {n}? Oda zake za zamani zitabaki.",ceDeleted:"{n} amefutwa",ceMissing:"Mteja hakupatikana",optRegPlain:"Kawaida",wonTitle:"Makadirio yaliyoshinda",lostTitle:"Makadirio yaliyopotea",wonValue:"Thamani iliyoshinda",lostValue:"Thamani iliyopotea",wonByCust:"Ushindi kwa mteja",lostByCust:"Hasara kwa mteja",wonByCat:"Ushindi kwa aina",lostByCat:"Hasara kwa aina — tunapokuwa dhaifu",timeToClose:"Muda wa kufunga",sameDay:"Siku hiyo hiyo",nextDay:"Siku inayofuata",twoPlusDays:"Siku 2+",lostVsWon:"Ukubwa wa kadirio lililopotea vs kushinda",avgLostQuote:"Wastani wa kadirio lililopotea",avgWonQuote:"Wastani wa kadirio lililoshinda",responseLag:"Kasi ya ufuatiliaji kwa makadirio yaliyopotea",within1Day:"Ufuatiliaji ndani ya siku 1",after2Days:"Ufuatiliaji baada ya siku 2+",lagInsight:"Makadirio mengi yaliyopotea yalikuwa na ufuatiliaji wa polepole",sizeInsight:"Ukubwa sawa — inaonyesha ushindani, si bei",thisMonth:"mwezi huu",backToReport:"Rudi kwenye ripoti",saleTitle:"Maelezo ya mauzo",saleCustomer:"Mteja",saleDate:"Tarehe",saleItems:"Bidhaa",viewCustBtn:"Angalia wasifu wa mteja",daySummary:"Oda {n} · {v}",pickDay:"Chagua siku",ciAllDone:"Wateja wote wamesalimiwa!",ciAllDoneSub:"Mwanzo mzuri wa siku — mzunguko utaanza upya kesho asubuhi.",ciGreetedSec:"Waliosalimiwa ({n})",backHome:"Rudi Mwanzo",catTitle:"Maelezo ya aina",areaTitle:"Maelezo ya eneo",areasLbl:"Mauzo kwa eneo",productsIn:"Bidhaa katika aina hii",buyersLbl:"Nani ananunua",qtySold:"{n} zimeuzwa",custIn:"Wateja {a}",ordersIn:"Oda {n}",recTitle:"Rekodi zangu",recBigSale:"Mauzo makubwa zaidi",recBestDay:"Siku bora kabisa",recBestWeek:"Wiki bora",recMostDay:"Oda nyingi kwa siku moja",recTopCust:"Mteja mkubwa",recOrders:"Oda {n}",savedMsg:"Imehifadhiwa",reviewTitle:"Kagua oda",reviewConfirm:"Thibitisha oda",reviewReject:"Kataa oda",rejectAsk:"Una uhakika unataka kufuta oda hii? Mteja hataarifiwa moja kwa moja.",rejectConfirm:"Ndiyo, ifute",rejectBack:"Weka oda",orderCancelled:"Oda imefutwa",resetData:"Weka upya data ya majaribio",resetConfirm:"Weka upya data yote ya majaribio? Programu itapakuliwa upya.",demoTip:"Unatumia data ya majaribio — gusa chochote, hakuna kitakachoharibika. Onyesha upya kuanza tena.",gotIt:"Sawa",nomatch:"Hakuna mteja anayelingana na utafutaji",
+   clearc:"Futa kadirio lote?",pprice:"Bei kwa kila kimoja cha",bizname:"Jina la biashara:",bizaddr:"Anwani / mahali:",bizphone:"Namba ya simu:",rpTitle:"Ripoti ya biashara",rpSub:"Ripoti unayoweza kumtumia mtu yeyote",rpPeriodLbl:"Kipindi",rpGenerate:"Tengeneza PDF",rpSave:"Hifadhi kwenye simu",rpThisMonth:"Mwezi huu",rpLastMonth:"Mwezi uliopita",rpQuarter:"Miezi 3 iliyopita",rpAllTime:"Muda wote",rpCoverKicker:"Ripoti ya biashara",rpCoverOrders:"oda {n} · wateja {c}",rpTotalSales:"Mauzo yote",rpP2Title:"Mwenendo wa mauzo",rpP3Title:"Wateja",rpP4Title:"Bidhaa na makundi",rpP5Title:"Makusanyo",rpTrendW:"Wiki {n} zilizopita",rpTrendM:"Miezi {n} iliyopita",rpPipeline:"Kadirio zilizoshinda, kupotea na kusubiri",rpTopCust:"Wateja bora",rpByArea:"Mauzo kwa eneo",rpByCat:"Mgawanyo kwa kundi",rpTopProd:"Bidhaa bora",rpPageOf:"Ukurasa {n} kati ya {t}",rpNoData:"Hakuna taarifa kwa kipindi hiki",rpOther:"Nyingine",rpDone:"Ripoti tayari",rpShareTxt:"Ripoti ya biashara — {biz}",rpSummary:"oda {n} · {v} · wateja {c}",storageFull:"Hifadhi ya simu imejaa — hilo halijahifadhiwa. Futa nafasi.",discPct:"Punguzo la asilimia {n}",fnoteCur:"Bei ni kwa Shilingi za Tanzania (TSh).",fnoteValid:"Kadirio hili ni halali kwa siku 7 kuanzia tarehe iliyo hapo juu.",qContact:"Mawasiliano",repMobile:"Simu yako (inaonekana kwenye kadirio)",choosecust:"Chagua mteja",custsearch:"Tafuta wateja…",newcust:"Ongeza mteja",use:"Tumia",selcust:"Chagua mteja",greet:"Habari, Pauline",attention:"Yanayohitaji uangalizi",al1:"Kadirio 3 yanasubiri majibu",al2:"Oda 2 za Temeke tayari kuunganishwa",al3:"Siku 8 zimebaki kufikia lengo la 20M",todayplan:"Ratiba ya leo",s1:"Salamu za asubuhi — tuma ujumbe kwa wateja 10 muhimu",s2:"Fuatilia kadirio 3 yaliyosubiri",s3:"Piga simu Kariakoo Building Materials — oda mpya",s4:"Tengeneza kadirio kutoka majibu",s5:"Panga usafirishaji kwa maeneo",s6:"Ingiza mauzo, panga kesho",monthtarget:"Lengo la mwezi",tofirst:"{x} kufikia bonasi ya kwanza (~TSh {y} kwa 20M)",bonusnow:"Bonasi hadi sasa: TSh {z} ({r}%)",navhome:"Nyumbani",navorders:"Oda",navProducts:"Bidhaa",payPaid:"Imelipwa",payUnpaid:"Wakati wa kufikisha",ordCollected:"Zilizolipwa",ordOutstanding:"Za kukusanya",ordTotalLbl:"Jumla ya mauzo",payReward:"Imefikishwa — TSh {n} zimekusanywa!",saveBtn:"Hifadhi",cancelBtn:"Ghairi",yesBtn:"Ndiyo",calcNeedBoth:"Ingiza thamani ya oda na bei ya usafirishaji kwanza.",confirmLostMsg:"Weka kadirio hili kama limekosa? Litaondolewa kwenye ufuatiliaji.",undoLbl:"TENGUA",undoOrderMsg:"Oda imerekodiwa",undone:"Imetenguliwa",schedToday:"Leo",schedTomorrow:"Kesho",schedPickDate:"Chagua tarehe",schedFor:"Imepangwa {d}",unscheduled:"Haijapangwa",delivItems:"Bidhaa {n}",delivExpand:"Angalia bidhaa",delivScheduled:"Imepangwa",delivUnscheduled:"Haijapangwa",delivDue:"inatarajiwa leo",delivMarkDone:"Weka imefikishwa",delivered:"Imefikishwa",delivNone:"Hakuna oda za kupeleka",confirmReplyMsg:"Habari {name}, oda yako ya TSh {total} imethibitishwa. Tutafikisha na kukusanya malipo wakati wa uwasilishaji. Asante kwa biashara yako! — {biz}",invoiceTitle:"ANKARA",invPayDue:"Malipo yalipwe wakati wa uwasilishaji",invNo:"Ankara",sendConfirmWA:"Thibitisha kwa mteja",viewInvoice:"Angalia ankara",navSettings:"Mipangilio",navCustomers:"Wateja",moneyShow:"Onyesha",moneyHide:"Ficha",menuTerms:"Vigezo na masharti",menuLegal:"Kisheria na faragha",menuSignOut:"Toka",signOutAsk:"Unataka kutoka Fundi Sales?",signOutYes:"Toka",signOutNo:"Baki",signedOut:"Umetoka",setEmailLbl:"Barua pepe",setCompanyTitle:"Kampuni",setCoNameLbl:"Jina la kampuni",setCoAreaLbl:"Mahali / eneo",setCoTinLbl:"TIN (kwa ankara)",setBossLbl2:"Mawasiliano ya ripoti (bosi)",bossHint:"Ripoti za mwezi hutumwa kwa namba hii",setCardTitle:"Kadi ya biashara ya kidijitali",cardRecipLbl:"Tuma kwa (namba ya WhatsApp)",sendCardTxt:"Tuma",setSecTitle:"Usalama",pinLbl:"PIN ya kufungua app",pinHint:"PIN ya tarakimu 6 inahitajika kufungua app",changePinTxt:"Badilisha PIN",secNote:"Data yako iko kwenye simu hii tu. PIN inalinda app kama mtu ataazima simu yako — weka pia kufuli ya simu.",verifiedTxt:"Imethibitishwa",pendingTxt:"Inasubiri",enterPin:"Weka PIN",setPin:"Weka PIN yako",confirmPin:"Thibitisha PIN",wrongPin:"PIN si sahihi — jaribu tena",pinMismatch:"PIN hazikufanana — anza upya",pinSet:"PIN imewashwa",pinOff:"PIN imezimwa",pinForgotMsg:"Umesahau PIN? Njia pekee ni kufuta data ya app (data iko kwenye simu hii tu). Futa na uanze upya?",pinForgotYes:"Futa data",pinCooldown:"Majaribio mengi mno \u2014 subiri sekunde {s}",animLbl:"Michoro ya mwendo",animAuto:"Otomatiki",animOn:"Washa",animOff:"Zima",animHint:"Otomatiki hulingana na uwezo wa simu yako",ncModeNew:"Mteja mpya",ncModeWalk:"Mauzo ya papo hapo",custNamePh:"Jina la mteja *",phoneReqPh:"Simu +255\u2026 *",bizOptPh:"Jina la biashara (hiari)",walkNamePh:"Jina (hiari)",walkPhonePh:"Simu (hiari)",useForSale:"Tumia kwa mauzo haya",ncSave:"Hifadhi na uchague",needNamePhone:"Jina la mteja na simu vinahitajika",walkinCust:"Mteja wa papo hapo",subtotal:"Jumla ndogo",discReg:"Punguzo la mteja (\u221210%)",discVip:"Punguzo la VIP (\u221215%)",discHint:"Wateja waliohifadhiwa hupata punguzo 10% \u00b7 VIP 15% \u00b7 wapita-njia hulipa bei kamili",optReg:"Kawaida \u00b7 \u221210%",optVip:"VIP \u00b7 \u221215%",addPhoto:"Gusa kuweka picha yako",changePhoto:"Gusa kubadili picha yako",removePhoto:"Ondoa picha",photoSaved:"Picha imehifadhiwa \u2014 unapendeza",photoBig:"Picha ni kubwa mno \u2014 jaribu nyingine",dateTitle:"Tarehe ya usafirishaji",dateSet:"Weka tarehe",datePickEmpty:"Chagua tarehe kwanza",cardStyleTitle:"Muundo wa kadi",cardStyleHint:"Gusa kadi kubadili muundo wake",style_classic:"Asili",style_sunset:"Machweo",style_forest:"Msitu",style_ocean:"Bahari",style_noir:"Nyeusi",tplLbl:"Muundo wa mwanzo",tplHint:"Leo huonyesha siku yako kama orodha ya kazi",leoTitle:"Leo \u2014 siku yako",leoConfirm:"{c} amekubali",leoConfirmSub:"Thibitisha oda kabla haijapoa",leoGreet:"Mzunguko wa asubuhi \u2014 wateja {n}",leoGreetSub:"Habari kwanza, biashara inafuata",leoDeliv:"Usafirishaji {n} wa kupanga",leoDelivSub:"Tunza ahadi",leoFu:"Nukuu {n} zinasubiri jibu",leoFuSub:"Ukumbusho hushinda dili",leoGreetPrime:"Saa ya habari \u2014 maduka yanafunguliwa",leoNOrders:"oda {n}",pAdd:"+ Duka jipya",pEmpty:"Umeona duka njiani? Liongeze \u2014 hatua tano hadi mteja",pDays:"siku {n} hatua hii",pst_mgeni:"mgeni",pst_talked:"tumeongea",pst_katalogi:"katalogi",pst_quote:"nukuu",pst_mteja:"mteja",paName:"Jina la duka",paArea:"Eneo",paPhone:"Simu (hiari)",paSave:"Weka kwenye mstari",paNeedName:"Jina kwanza",paSaved:"Limeongezwa \u2014 nenda kusalimia",pAdvanced:"Mstari umesonga mbele",pxKt:"Tuma katalogi",pxWon:"Ameshinda \u2014 fanya mteja",pxDel:"Ondoa",pxDelAsk:"Ondoa duka hili kwenye mstari?",pWonMsg:"{c} sasa ni mteja wako!",leoP:"{c} anasubiri",leoPSub:"{s} kwa siku {n} \u00b7 fanya hatua",custViewC:"Wateja",custViewP:"Maduka mapya",thTitle:"Hadithi",thQuote:"Nukuu imetumwa",thQuoteWait:"inasubiri",thQuoteYes:"imekubaliwa",thBei:"bei hadi {d}",thOrder:"Oda imethibitishwa",thDeliv:"usafirishaji {d}",thRemind:"Ukumbusho tayari \u2014 gusa kutuma",thRhythm:"Hununua kila siku ~{g}",thDueNow:"muda umefika",thGreetBtn:"Salimia WhatsApp",thQuoteBtn:"Nukuu mpya",ktTitle:"Katalogi",ktSubTxt:"Tuma bidhaa zako kwa duka jipya",ktToLbl:"Ni ya nani? (hiari)",ktToPh:"mf. Mwenge Hardware",ktToAny:"Hakuna mtu maalum",ktNoPhone:"hakuna simu",ktScopeLbl:"Waone nini?",ktAll:"Bidhaa zote",ktCount:"Bidhaa {n} \u00b7 jalada + kurasa za bei",ktShare:"Tuma katalogi",ktSave:"Hifadhi PDF",ktHint:"Inatumwa kama PDF moja \u2014 rahisi kutuma WhatsApp",ktCoverTitle:"Katalogi ya bidhaa",ktCoverItems:"Bidhaa {n}",ktProof:"Oda {n} zimekamilika kwa Fundi",ktValid:"Bei ni sahihi hadi {d}",ktDisc1:"Zinaweza kubadilika bila taarifa \u2014 tafadhali thibitisha kabla ya kuagiza.",ktDisc2:"Upatikanaji unaweza kutofautiana. Tutakujulisha kabla ya mabadiliko yoyote.",ktFoot:"Bei za {d} \u00b7 zinaweza kubadilika",ktGreet:"Habari {to}! Nimekuletea katalogi yetu \u2014 bei za leo, nimezihifadhi hadi {d}. Nikipata oda, nafikisha haraka. Karibu sana! \u2014 {biz}",ktFriend:"rafiki",ktNudge:"Habari {to}! Uliipata katalogi yangu? Niko tayari kukuhudumia \u2014 {biz}",ktSent:"Katalogi imetumwa",ktSaved:"Kurasa zimehifadhiwa",leoKt:"{c} \u2014 katalogi kimya",leoKtSub:"ilitumwa siku {n} \u00b7 kumbusha sasa",menuKatalogi:"Katalogi",leoDone:"Siku imekamilika \u2014 kazi nzuri!",leoDoneSub:"TSh {v} zimehamishwa leo",commLbl:"Kiwango cha kamisheni (%)",commHint:"Fungu lako la kila oda \u2014 unaiona wewe tu",commLine:"Yako mwezi huu: TSh {v}",beiLeo:"Bei ya leo \u2014 nimekuhifadhia hadi {d}",pinForgotNo:"Rudi",roleDefault:"Afisa Mauzo",settingsTitle:"Mipangilio",profileTitle:"Wasifu wangu",repName:"Jina lako",repPhone:"Simu yako",bossPhone:"Simu ya bosi (kwa ripoti)",darkMode:"Hali ya giza",langLabel:"Lugha",perfTitle:"Utendaji wangu",perfSales:"Mauzo jumla",perfOrders:"Oda zilizofungwa",perfAvg:"Wastani wa oda",perfWon:"Kiwango cha ushindi",perfCommission:"Kamisheni inayokadiriwa",perfThisMonth:"Mwezi huu",perfAllTime:"Wakati wote",exportCSV:"Hamisha CSV",exportPDF:"Hamisha ripoti PDF",vsLast:"vs mwezi uliopita",dailyLbl:"Kila siku",weeklyLbl:"Kila wiki",ordersInWeek:"Oda {n} · TSh {v}",moreOrders:"+ {n} zaidi",bestWeek:"wiki bora",noOrdersWeek:"Hakuna oda wiki hii",custProfile:"Wasifu wa mteja",custLifetime:"Matumizi jumla",custOrderCount:"Oda",custAvgOrder:"Wastani wa oda",custLastOrder:"Oda ya mwisho",custHistory:"Historia ya oda",custBuys:"Wanachonunua",custDaysAgo:"Siku {n} zilizopita",custToday:"Leo",custCall:"Piga simu",custMessage:"Tuma ujumbe",custWinRate:"Kiwango cha ushindi",custNoOrders:"Hakuna oda bado",ceTitle:"Hariri mteja",ceSub:"Sasisha taarifa zake",ceBiz:"Jina la biashara",cePerson:"Mtu wa mawasiliano",cePhone:"Simu",ceArea:"Eneo",ceTier:"Daraja",ceSave:"Hifadhi mabadiliko",ceDelete:"Futa mteja",ceEditBtn:"Hariri taarifa",ceSaved:"Mteja amesasishwa",ceDelAsk:"Futa {n}? Oda zake za zamani zitabaki.",ceDeleted:"{n} amefutwa",ceMissing:"Mteja hakupatikana",optRegPlain:"Kawaida",wonTitle:"Makadirio yaliyoshinda",lostTitle:"Makadirio yaliyopotea",wonValue:"Thamani iliyoshinda",lostValue:"Thamani iliyopotea",wonByCust:"Ushindi kwa mteja",lostByCust:"Hasara kwa mteja",wonByCat:"Ushindi kwa aina",lostByCat:"Hasara kwa aina — tunapokuwa dhaifu",timeToClose:"Muda wa kufunga",sameDay:"Siku hiyo hiyo",nextDay:"Siku inayofuata",twoPlusDays:"Siku 2+",lostVsWon:"Ukubwa wa kadirio lililopotea vs kushinda",avgLostQuote:"Wastani wa kadirio lililopotea",avgWonQuote:"Wastani wa kadirio lililoshinda",responseLag:"Kasi ya ufuatiliaji kwa makadirio yaliyopotea",within1Day:"Ufuatiliaji ndani ya siku 1",after2Days:"Ufuatiliaji baada ya siku 2+",lagInsight:"Makadirio mengi yaliyopotea yalikuwa na ufuatiliaji wa polepole",sizeInsight:"Ukubwa sawa — inaonyesha ushindani, si bei",thisMonth:"mwezi huu",backToReport:"Rudi kwenye ripoti",saleTitle:"Maelezo ya mauzo",saleCustomer:"Mteja",saleDate:"Tarehe",saleItems:"Bidhaa",viewCustBtn:"Angalia wasifu wa mteja",daySummary:"Oda {n} · {v}",pickDay:"Chagua siku",ciAllDone:"Wateja wote wamesalimiwa!",ciAllDoneSub:"Mwanzo mzuri wa siku — mzunguko utaanza upya kesho asubuhi.",ciGreetedSec:"Waliosalimiwa ({n})",backHome:"Rudi Mwanzo",catTitle:"Maelezo ya aina",areaTitle:"Maelezo ya eneo",areasLbl:"Mauzo kwa eneo",productsIn:"Bidhaa katika aina hii",buyersLbl:"Nani ananunua",qtySold:"{n} zimeuzwa",custIn:"Wateja {a}",ordersIn:"Oda {n}",recTitle:"Rekodi zangu",recBigSale:"Mauzo makubwa zaidi",recBestDay:"Siku bora kabisa",recBestWeek:"Wiki bora",recMostDay:"Oda nyingi kwa siku moja",recTopCust:"Mteja mkubwa",recOrders:"Oda {n}",savedMsg:"Imehifadhiwa",reviewTitle:"Kagua oda",reviewConfirm:"Thibitisha oda",reviewReject:"Kataa oda",rejectAsk:"Una uhakika unataka kufuta oda hii? Mteja hataarifiwa moja kwa moja.",rejectConfirm:"Ndiyo, ifute",rejectBack:"Weka oda",orderCancelled:"Oda imefutwa",resetData:"Weka upya data ya majaribio",resetConfirm:"Weka upya data yote ya majaribio? Programu itapakuliwa upya.",demoTip:"Unatumia data ya majaribio — gusa chochote, hakuna kitakachoharibika. Onyesha upya kuanza tena.",gotIt:"Sawa",nomatch:"Hakuna mteja anayelingana na utafutaji",
  moneyTitle:"Mwezi huu",sloganTxt:"Uza tu \u2014 mengine ni kazi yetu",tapReport:"Gusa kuona ripoti kamili",
  moneyToBonus:"TSh {x} hadi bonasi yako ya kwanza",moneyBonusNow:"Unapata bonasi {r}% — TSh {z} hadi sasa",
  urgentConfirm:"{c} amekubali — thibitisha oda",
@@ -1875,7 +1888,34 @@ const DEMO_ORDERS=(function(){
       week:o.w,date:n-o.d*DAY,delivStatus:o.paid?'delivered':'pending',items:o.items,total:0};
   });
 })();
-function demoOrdersInit(){DEMO_ORDERS.forEach(function(o){if(!o.total)o.total=itemsTotal(o.items);});}
+function demoOrdersInit(){DEMO_ORDERS.forEach(function(o){if(!o.total)o.total=itemsTotal(o.items);});seedPayments(DEMO_ORDERS);}
+/* Payment is what completes a delivery, so a delivered order with no payments
+   is not a valid record. Deterministic off the id: the same demo always looks
+   the same. Seed path only — a stored order is the rep's and is left alone. */
+function seedPayments(list){
+  var PROV=['mpesa','mixx','airtel','halo','tpesa'];
+  (list||[]).forEach(function(o){
+    if(o.delivStatus!=='delivered')return;
+    if((o.payments||[]).length)return;
+    var h=0,sid=String(o.id);
+    for(var i=0;i<sid.length;i++)h=(h*31+sid.charCodeAt(i))>>>0;
+    var at=o.date, total=o.total||0;
+    if(!total)return;
+    var mode=h%10;
+    if(mode<4){                                   /* all cash */
+      o.payments=[{id:'seedpay-'+o.id+'-c',method:'cash',provider:'',amt:total,ref:'',at:at,repId:o.repId||REP_ID,repName:o.repName||'',handoverId:null}];
+    }else if(mode<8){                             /* all mobile */
+      o.payments=[{id:'seedpay-'+o.id+'-m',method:'mobile',provider:PROV[h%PROV.length],amt:total,
+        ref:'TZ'+(h%900000+100000),at:at,repId:o.repId||REP_ID,repName:o.repName||'',handoverId:null}];
+    }else{                                        /* split tender at the tailgate */
+      var cash=Math.round(total*0.4);
+      o.payments=[
+        {id:'seedpay-'+o.id+'-c',method:'cash',provider:'',amt:cash,ref:'',at:at,repId:o.repId||REP_ID,repName:o.repName||'',handoverId:null},
+        {id:'seedpay-'+o.id+'-m',method:'mobile',provider:PROV[h%PROV.length],amt:total-cash,
+          ref:'TZ'+(h%900000+100000),at:at,repId:o.repId||REP_ID,repName:o.repName||'',handoverId:null}];
+    }
+  });
+}
 function allOrdersAll(){return DEMO_ORDERS.concat(state.orders);}
 function findOrderById(oid){return DEMO_ORDERS.find(function(o){return o.id===oid;})||state.orders.find(function(o){return o.id===oid;});}
 function defStock(id){return 24+(id*13)%90;}
@@ -1889,7 +1929,10 @@ function seedOrders(){const n=Date.now();return [{id:'o1',custId:3,custName:'Kar
 function loadOrders(){
   var a=lsJSON('fundi_orders');
   if(Array.isArray(a))return a;      /* present but empty = she cleared it */
-  return seedOrders();               /* absent = first run */
+  var seed=seedOrders();             /* absent = first run */
+  seed.forEach(function(o){if(!o.total)o.total=itemsTotal(o.items);});
+  seedPayments(seed);
+  return seed;
 }
 function saveOrders(){lsSet('fundi_orders',JSON.stringify(state.orders));}
 function wkey(){const d=new Date();return 'fundi_wins_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
@@ -3369,10 +3412,10 @@ function ktLogSend(){
   var a=loadKt();a.push({to:to||t('ktFriend'),date:Date.now(),scope:state.ktScope});saveKt(a);
   advanceProspectByName(to,'katalogi');
 }
-function ktPdfBlob(pages){
+function ktPdfBlob(pages,aspect){
   /* Minimal image-only PDF. Objects: 1 catalog, 2 pages tree, then per page a
      page object, a content stream and the JPEG itself. */
-  var W=595, H=Math.round(595*1350/1080);            /* A4 width, page aspect */
+  var W=595, H=Math.round(595*(aspect||1350/1080));   /* A4 width, page aspect */
   var chunks=[], len=0;
   function put(x){ chunks.push(x); len+=x.length; return len; }
   function txt(s){ var a=new Uint8Array(s.length); for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&0xff; return a; }
@@ -3411,6 +3454,266 @@ function ktPdfName(){
     +new Date().toISOString().slice(0,10)+'.pdf';
 }
 function dataURLtoBlob(d){var b=atob(d.split(',')[1]);var u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new Blob([u],{type:'image/jpeg'});}
+/* ================= Business review PDF =================================
+   A 1080x1528 canvas per page (A4 proportions), drawn by hand. Everything
+   below is chart primitives; the page builders come after. */
+var RP={W:1080,H:1528,M:84,
+  ink:'#101A28', soft:'#6B7686', line:'#DFE6EF', panel:'#F7FAFD',
+  pos:'#15803D', neg:'#C2410C',
+  ser:['#1D3A5F','#2FA6C8','#4FA98A','#E0A030','#B85C2B','#7A6FA8','#8FA3B8'],
+  f:function(sz,w){return (w||400)+' '+sz+'px system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';}};
+function rpBrand(){return MS_GRADS[(state.biz&&state.biz.cardStyle)||'classic']||MS_GRADS.classic;}
+function rpTx(ctx,str,x,y,size,weight,col,align){
+  ctx.font=RP.f(size,weight);ctx.fillStyle=col||RP.ink;ctx.textAlign=align||'left';
+  ctx.textBaseline='alphabetic';ctx.fillText(str,x,y);ctx.textAlign='left';}
+function rpClip(ctx,str,max,size,weight){
+  ctx.font=RP.f(size,weight);
+  if(ctx.measureText(str).width<=max)return str;
+  var t2=str;while(t2.length>1&&ctx.measureText(t2+'…').width>max)t2=t2.slice(0,-1);
+  return t2+'…';}
+function rpRR(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function rpCard(ctx,x,y,w,h,title){
+  rpRR(ctx,x,y,w,h,18);ctx.fillStyle='#fff';ctx.fill();
+  ctx.strokeStyle=RP.line;ctx.lineWidth=2;ctx.stroke();
+  if(title)rpTx(ctx,title,x+28,y+46,26,700,RP.ink);
+  return y+(title?78:28);}
+function rpKpi(ctx,x,y,w,h,label,value,sub){
+  rpRR(ctx,x,y,w,h,16);ctx.fillStyle=RP.panel;ctx.fill();
+  ctx.strokeStyle=RP.line;ctx.lineWidth=2;ctx.stroke();
+  rpTx(ctx,label.toUpperCase(),x+22,y+38,17,700,RP.soft);
+  rpTx(ctx,rpClip(ctx,value,w-44,38,800),x+22,y+84,38,800,RP.ink);
+  if(sub)rpTx(ctx,rpClip(ctx,sub,w-44,18,600),x+22,y+112,18,600,RP.soft);}
+/* line + area, with gridlines and month labels */
+function rpLine(ctx,x,y,w,h,pts,labels){
+  var max=Math.max.apply(null,pts.concat([1]));
+  var n=pts.length, gx=x+70, gw=w-90, gy=y+14, gh=h-56;
+  ctx.strokeStyle=RP.line;ctx.lineWidth=1.5;
+  for(var g=0;g<=4;g++){
+    var yy=gy+gh-(gh*g/4);
+    ctx.beginPath();ctx.moveTo(gx,yy);ctx.lineTo(gx+gw,yy);ctx.stroke();
+    rpTx(ctx,g?fmtM(max*g/4):'0',gx-14,yy+7,17,600,RP.soft,'right');}
+  var X=function(i){return gx+(n<2?gw/2:gw*i/(n-1));};
+  var Y=function(v){return gy+gh-(gh*v/max);};
+  var grad=ctx.createLinearGradient(0,gy,0,gy+gh);
+  grad.addColorStop(0,'rgba(47,166,200,.30)');grad.addColorStop(1,'rgba(47,166,200,0)');
+  ctx.beginPath();ctx.moveTo(X(0),gy+gh);
+  pts.forEach(function(v,i){ctx.lineTo(X(i),Y(v));});
+  ctx.lineTo(X(n-1),gy+gh);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();pts.forEach(function(v,i){i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v));});
+  ctx.strokeStyle=RP.ser[1];ctx.lineWidth=4;ctx.lineJoin='round';ctx.stroke();
+  pts.forEach(function(v,i){
+    ctx.beginPath();ctx.arc(X(i),Y(v),i===n-1?9:5,0,7);
+    ctx.fillStyle=i===n-1?RP.ser[0]:RP.ser[1];ctx.fill();
+    if(i===n-1){ctx.beginPath();ctx.arc(X(i),Y(v),9,0,7);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();}});
+  labels.forEach(function(l,i){
+    if(n>8&&i%2)return;
+    rpTx(ctx,l,X(i),gy+gh+34,17,600,RP.soft,'center');});}
+/* donut with legend to the right */
+function rpDonut(ctx,x,y,w,h,segs){
+  var total=segs.reduce(function(s2,d){return s2+d.v;},0)||1;
+  var r=Math.min(h,w*0.44)/2, cx=x+r+14, cy=y+h/2, a=-Math.PI/2;
+  segs.forEach(function(d,i){
+    var slice=(d.v/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a,a+slice);ctx.closePath();
+    ctx.fillStyle=d.c||RP.ser[i%RP.ser.length];ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.stroke();a+=slice;});
+  ctx.beginPath();ctx.arc(cx,cy,r*0.58,0,7);ctx.fillStyle='#fff';ctx.fill();
+  rpTx(ctx,fmtM(total),cx,cy+2,30,800,RP.ink,'center');
+  rpTx(ctx,'TSh',cx,cy+30,17,600,RP.soft,'center');
+  var lx=x+w*0.52, ly=cy-(segs.length*36)/2+22;
+  segs.forEach(function(d,i){
+    ctx.fillStyle=d.c||RP.ser[i%RP.ser.length];rpRR(ctx,lx,ly-15,18,18,5);ctx.fill();
+    rpTx(ctx,rpClip(ctx,d.k,w*0.48-130,20,600),lx+30,ly,20,600,RP.ink);
+    rpTx(ctx,Math.round(d.v/total*100)+'%',x+w-4,ly,20,700,RP.soft,'right');
+    ly+=36;});}
+/* ranked horizontal bars */
+function rpBars(ctx,x,y,w,h,items){
+  if(!items.length){rpTx(ctx,t('rpNoData'),x,y+30,20,600,RP.soft);return;}
+  var max=Math.max.apply(null,items.map(function(d){return d.v;}).concat([1]));
+  var rowH=Math.min(52,h/items.length), barH=Math.min(26,rowH-22);
+  items.forEach(function(d,i){
+    var yy=y+i*rowH;
+    rpTx(ctx,rpClip(ctx,d.k,w-230,20,600),x,yy+18,20,600,RP.ink);
+    rpTx(ctx,'TSh '+fmt(d.v),x+w,yy+18,19,700,RP.soft,'right');
+    rpRR(ctx,x,yy+26,w,barH,barH/2);ctx.fillStyle=RP.panel;ctx.fill();
+    var bw=Math.max(barH*1.6,w*(d.v/max));   /* a stub still reads as a bar */
+    rpRR(ctx,x,yy+26,bw,barH,barH/2);ctx.fillStyle=d.c||RP.ser[i%RP.ser.length];ctx.fill();});}
+function rpPageFrame(ctx,title,sub,no,of){
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,RP.W,RP.H);
+  var b=rpBrand();
+  ctx.fillStyle=b[0];ctx.fillRect(0,0,RP.W,10);
+  rpTx(ctx,title,RP.M,104,42,800,RP.ink);
+  if(sub)rpTx(ctx,sub,RP.M,138,22,600,RP.soft);
+  ctx.strokeStyle=RP.line;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(RP.M,RP.H-96);ctx.lineTo(RP.W-RP.M,RP.H-96);ctx.stroke();
+  rpTx(ctx,(state.biz&&state.biz.name)||'',RP.M,RP.H-62,19,600,RP.soft);
+  rpTx(ctx,t('rpPageOf').replace('{n}',no).replace('{t}',of),RP.W-RP.M,RP.H-62,19,600,RP.soft,'right');
+  return 190;}
+
+/* ---- the data behind the report --------------------------------------- */
+function rpTrendWindow(res){
+  /* A chart of mostly-empty buckets reads as a fault. Fit the bucket to the
+     data: weeks for a short history, months once there is a year of it. */
+  var ds=res.rows.map(function(o){return o.date;});
+  if(!ds.length)return {bucket:'month',n:6};
+  var span=(Math.max.apply(null,ds)-Math.min.apply(null,ds))/DAY;
+  if(span<=70) return {bucket:'week', n:Math.max(4,Math.min(12,Math.ceil(span/7)+1))};
+  if(span<=400)return {bucket:'month',n:Math.max(4,Math.min(12,Math.ceil(span/30)+1))};
+  return {bucket:'month',n:12};
+}
+function rpPeriod(kind){
+  var now=Date.now(), p;
+  if(kind==='month'){p=DATA.period('month',now);return {from:p.from,to:now,label:t('rpThisMonth')};}
+  if(kind==='last'){p=DATA.shift(DATA.period('month',now),-1);return {from:p.from,to:p.to,label:t('rpLastMonth')};}
+  if(kind==='q'){p=DATA.shift(DATA.period('month',now),-2);return {from:p.from,to:now,label:t('rpQuarter')};}
+  return {from:null,to:null,label:t('rpAllTime')};}
+function rpCollections(){
+  var cash=0,mob=0,byProv={};
+  DATA.source().orders.forEach(function(o){
+    orderPayments(o).forEach(function(p){
+      var a=+p.amt||0;
+      if(p.method==='cash')cash+=a;
+      else{mob+=a;var k=(PAY_PROVIDERS.filter(function(x){return x.k===p.provider;})[0]||{}).n||t('rpOther');
+        byProv[k]=(byProv[k]||0)+a;}});});
+  return {cash:cash,mobile:mob,byProvider:Object.keys(byProv).map(function(k){return {k:k,v:byProv[k]};})
+    .sort(function(a,b){return b.v-a.v;})};}
+
+function buildReportPages(cb){
+  var cv=document.getElementById('rpCanvas'), ctx=cv.getContext('2d');
+  var per=rpPeriod(state.rpPeriod||'all');
+  var res=DATA.sales({from:per.from,to:per.to});
+  var allRes=DATA.sales({});
+  var q=DATA.quotes({from:per.from,to:per.to});
+  var out=[], TOTAL=5;
+
+  /* ---- page 1: cover ---- */
+  var b=rpBrand();
+  var g=ctx.createLinearGradient(0,0,RP.W,RP.H);
+  b.forEach(function(c,i){g.addColorStop(i/(b.length-1),c);});
+  ctx.fillStyle=g;ctx.fillRect(0,0,RP.W,RP.H);
+  rpTx(ctx,t('rpCoverKicker').toUpperCase(),RP.M,300,22,700,'rgba(255,255,255,.62)');
+  var nm=((state.biz&&state.biz.name)||'').toUpperCase();
+  ctx.font=RP.f(58,800);
+  var words=nm.split(' '), line='', ly=372;
+  words.forEach(function(wd){
+    var test=line?line+' '+wd:wd;
+    if(ctx.measureText(test).width>RP.W-RP.M*2){rpTx(ctx,line,RP.M,ly,58,800,'#fff');ly+=68;line=wd;}
+    else line=test;});
+  if(line)rpTx(ctx,line,RP.M,ly,58,800,'#fff');
+  rpTx(ctx,per.label,RP.M,ly+70,30,600,'rgba(255,255,255,.82)');
+  rpTx(ctx,t('rpTotalSales').toUpperCase(),RP.M,RP.H-430,22,700,'rgba(255,255,255,.62)');
+  rpTx(ctx,'TSh '+fmt(res.total),RP.M,RP.H-360,64,800,'#fff');
+  ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(RP.M,RP.H-310);ctx.lineTo(RP.M+260,RP.H-310);ctx.stroke();
+  rpTx(ctx,t('rpCoverOrders').replace('{n}',res.count).replace('{c}',DATA.groupBy(res,'customer').length),
+    RP.M,RP.H-262,24,600,'rgba(255,255,255,.82)');
+  rpTx(ctx,t('fnote2'),RP.M,RP.H-120,20,600,'rgba(255,255,255,.55)');
+  out.push(cv.toDataURL('image/jpeg',.92));
+
+  /* ---- page 2: sales performance ---- */
+  var y=rpPageFrame(ctx,t('rpP2Title'),per.label,2,TOTAL);
+  var cw=(RP.W-RP.M*2-32)/3;
+  rpKpi(ctx,RP.M,y,cw,132,t('rpTotalSales'),'TSh '+fmtM(res.total),res.count+' '+t('navorders').toLowerCase());
+  rpKpi(ctx,RP.M+cw+16,y,cw,132,t('statAvg'),'TSh '+fmt(res.avg),'');
+  rpKpi(ctx,RP.M+(cw+16)*2,y,cw,132,t('statWon'),(q.winRate==null?'—':q.winRate+'%'),
+    q.won.length+' / '+(q.won.length+q.lost.length));
+  y+=168;
+  var tw=rpTrendWindow(allRes);
+  var ser=DATA.series(allRes,tw.bucket,tw.n);
+  var top=rpCard(ctx,RP.M,y,RP.W-RP.M*2,500,
+    t(tw.bucket==='week'?'rpTrendW':'rpTrendM').replace('{n}',tw.n));
+  rpLine(ctx,RP.M+28,top,RP.W-RP.M*2-56,410,
+    ser.map(function(p){return p.value;}),
+    ser.map(function(p){return new Date(p.from).toLocaleDateString(state.lang==='sw'?'sw-TZ':'en-GB',
+      tw.bucket==='week'?{day:'numeric',month:'short'}:{month:'short'});}));
+  y+=536;
+  var pipeTop=rpCard(ctx,RP.M,y,RP.W-RP.M*2,420,t('rpPipeline'));
+  rpDonut(ctx,RP.M+28,pipeTop,RP.W-RP.M*2-56,320,[
+    {k:t('qdWon'),v:q.wonValue,c:RP.ser[2]},
+    {k:t('qdLost'),v:q.lostValue,c:RP.neg},
+    {k:t('qdOpen'),v:q.openValue,c:RP.ser[3]}]);
+  out.push(cv.toDataURL('image/jpeg',.92));
+
+  /* ---- page 3: customers ---- */
+  y=rpPageFrame(ctx,t('rpP3Title'),per.label,3,TOTAL);
+  var custs=DATA.groupBy(res,'customer').slice(0,10);
+  var c1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,620,t('rpTopCust'));
+  rpBars(ctx,RP.M+28,c1,RP.W-RP.M*2-56,530,custs.map(function(d){return {k:d.key,v:d.total};}));
+  y+=656;
+  var areas=DATA.groupBy(res,'area').slice(0,6);
+  var c2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,480,t('rpByArea'));
+  rpBars(ctx,RP.M+28,c2,RP.W-RP.M*2-56,380,areas.map(function(d){return {k:d.key,v:d.total};}));
+  out.push(cv.toDataURL('image/jpeg',.92));
+
+  /* ---- page 4: products and categories ---- */
+  y=rpPageFrame(ctx,t('rpP4Title'),per.label,4,TOTAL);
+  var cats=DATA.groupBy(res,'category').slice(0,6);
+  var d1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,450,t('rpByCat'));
+  rpDonut(ctx,RP.M+28,d1,RP.W-RP.M*2-56,340,cats.map(function(d){return {k:d.key,v:d.total};}));
+  y+=486;
+  var prods=DATA.groupBy(res,'product').slice(0,10);
+  var d2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,590,t('rpTopProd'));
+  rpBars(ctx,RP.M+28,d2,RP.W-RP.M*2-56,500,prods.map(function(d){return {k:d.key,v:d.total};}));
+  out.push(cv.toDataURL('image/jpeg',.92));
+
+  /* ---- page 5: collections ---- */
+  y=rpPageFrame(ctx,t('rpP5Title'),per.label,5,TOTAL);
+  var col=rpCollections();
+  var e1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,420,t('collByMethod'));
+  rpDonut(ctx,RP.M+28,e1,RP.W-RP.M*2-56,320,[
+    {k:t('payViaCash'),v:col.cash,c:RP.ser[0]},
+    {k:t('payViaMobile'),v:col.mobile,c:RP.ser[1]}]);
+  y+=456;
+  var e2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,470,t('collByProvider'));
+  rpBars(ctx,RP.M+28,e2,RP.W-RP.M*2-56,370,col.byProvider.slice(0,6));
+  y+=506;
+  var owed=DATA.source().orders.reduce(function(s2,o){return s2+payOutstanding(o);},0);
+  rpKpi(ctx,RP.M,y,RP.W-RP.M*2,132,t('collDue'),'TSh '+fmt(owed),'');
+  out.push(cv.toDataURL('image/jpeg',.92));
+
+  cb(out);
+}
+function rpFileName(){
+  var d=new Date().toISOString().slice(0,10);
+  return ((state.biz&&state.biz.name)||'Fundi').replace(/[^A-Za-z0-9]+/g,'-')+'-review-'+d+'.pdf';}
+function rpDeliver(share){
+  buildReportPages(function(pages){
+    var blob=ktPdfBlob(pages,RP.H/RP.W);
+    var file=new File([blob],rpFileName(),{type:'application/pdf'});
+    if(share&&navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
+      navigator.share({files:[file],text:t('rpShareTxt').replace('{biz}',(state.biz&&state.biz.name)||'')}).catch(function(){});
+    }else{
+      var a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      setTimeout(function(){URL.revokeObjectURL(a.href);},4000);
+    }
+    hide('rpOverlay');toast(t('rpDone'));
+  });}
+function shareReport(){rpDeliver(true);}
+function saveReport(){rpDeliver(false);}
+function setRpPeriod(k){state.rpPeriod=k;renderRpSheet();}
+function renderRpSheet(){
+  var el=document.getElementById('rpPeriods');if(!el)return;
+  var opts=[['month',t('rpThisMonth')],['last',t('rpLastMonth')],['q',t('rpQuarter')],['all',t('rpAllTime')]];
+  el.innerHTML=opts.map(function(o){
+    return '<button class="cf-btn'+(o[0]===(state.rpPeriod||'all')?' on':'')+'" onclick="setRpPeriod(\''+o[0]+'\')">'+o[1]+'</button>';
+  }).join('');
+  var per=rpPeriod(state.rpPeriod||'all'), res=DATA.sales({from:per.from,to:per.to});
+  /* an empty period would produce a five-page PDF of nothing */
+  var empty=res.count===0;
+  ['rpGoBtn','rpSaveBtn'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b){b.disabled=empty;b.style.opacity=empty?'.45':'';b.style.pointerEvents=empty?'none':'';}
+  });
+  document.getElementById('rpSummary').textContent=
+    t('rpSummary').replace('{n}',res.count).replace('{v}','TSh '+fmt(res.total)).replace('{c}',DATA.groupBy(res,'customer').length);
+  ['rpTitle','rpSub','rpPeriodLbl','rpGoBtn','rpSaveBtn'].forEach(function(id,i){
+    var e=document.getElementById(id);
+    if(e)e.textContent=t(['rpTitle','rpSub','rpPeriodLbl','rpGenerate','rpSave'][i]);});}
+function openReportPdf(){state.rpPeriod=state.rpPeriod||'all';renderRpSheet();show('rpOverlay');}
+
 function shareKatalogi(){
   buildKtPages(function(pages){
     var blob=ktPdfBlob(pages);
