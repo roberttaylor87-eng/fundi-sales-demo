@@ -2128,8 +2128,15 @@ function stepHomeMonth(d){
   state.homeMonth=n; state.moneyOpen=true; renderHome();
 }
 function openMonthReport(){
-  var p=homeMonthRange();
-  state.repRange={kind:'custom',from:p.from,to:p.to};
+  /* the card is usually showing the current month, and the report has a chip
+     for exactly that — land on it rather than on a custom date range that says
+     the same thing in worse words. Only a stepped-back month needs the range. */
+  if(!(state.homeMonth||0)){
+    state.repRange={kind:'month'};
+  }else{
+    var p=homeMonthRange();
+    state.repRange={kind:'custom',from:p.from,to:p.to};
+  }
   state.repBucket=null; state.repHistN=null;
   showScreen('report');
 }
