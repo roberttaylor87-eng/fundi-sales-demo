@@ -40,11 +40,13 @@ function putClean(cache, url) {
   return fetch(url, { cache: 'reload' }).then(function (res) {
     if (!res || !res.ok) throw new Error('shell fetch failed: ' + url);
     return res.blob().then(function (body) {
-      return cache.put(url, new Response(body, {
-        status: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream' }
-      }));
+      /* Keep the validators. Without them the only way to ask "has this
+         changed?" is to download it again and compare the bytes, which is
+         what made this worse than having no worker at all. */
+      var h = { 'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream' };
+      var et = res.headers.get('ETag'); if (et) h['ETag'] = et;
+      var lm = res.headers.get('Last-Modified'); if (lm) h['Last-Modified'] = lm;
+      return cache.put(url, new Response(body, { status: 200, statusText: 'OK', headers: h }));
     });
   });
 }
@@ -80,21 +82,32 @@ function tellClients(msg) {
 
 /* Serve the cached copy at once, then refresh it in the background. If the
    refreshed shell differs from what was served, say so — do not apply it. */
+/* The document's identity, as cheaply as the server will tell us. */
+function stamp(res) {
+  if (!res) return '';
+  return res.headers.get('ETag') || res.headers.get('Last-Modified') || '';
+}
+
 function shellFirst(url, isDoc) {
   return caches.open(CACHE).then(function (cache) {
     return cache.match(url, { ignoreSearch: true }).then(function (hit) {
-      var net = fetch(url, { cache: 'no-cache' }).then(function (res) {
+      /* Default cache mode, deliberately. The first version forced no-cache,
+         so every navigation pulled the whole 546KB document over the network
+         even though the page had already been served from cache — and then
+         decoded both copies to text to compare them. A cache-first shell that
+         re-downloads the shell on every load is slower than no worker at all,
+         which is exactly what it measured as. This lets the browser send a
+         conditional request and take a 304. */
+      var net = fetch(url).then(function (res) {
         if (!res || !res.ok || res.type === 'opaque') return res;
         if (isDoc && hit) {
-          return Promise.all([hit.clone().text(), res.clone().text()])
-            .then(function (both) {
-              if (both[0] !== both[1]) {
-                return putClean(cache, url).then(function () {
-                  return tellClients({ type: 'UPDATED' });
-                }).then(function () { return res; });
-              }
-              return res;
-            })
+          var a = stamp(hit), b = stamp(res);
+          /* No validators from the server means no cheap way to tell. Say
+             nothing rather than claim an update on every single load. */
+          if (!a || !b || a === b) return res;
+          return putClean(cache, url).then(function () {
+            return tellClients({ type: 'UPDATED' });
+          }).then(function () { return res; })
             .catch(function () { return res; });
         }
         return putClean(cache, url).then(function () { return res; })
