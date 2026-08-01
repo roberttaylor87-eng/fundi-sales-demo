@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#182A4E" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1520" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fundi">
 <title>Fundi Sales</title>
 <style>
 
@@ -384,6 +390,13 @@ html.dark .cust-av{background:#1C2D40;border-color:#5B9EF4;color:#5B9EF4}
 .set-export:active{opacity:.7}
 .set-reset{width:100%;padding:12px;background:var(--paper);border:1.5px solid var(--line);color:var(--soft);font-size:13px;cursor:pointer;border-radius:10px}
 .set-reset:active{opacity:.7}
+.sw-upd{position:fixed;left:12px;right:12px;bottom:78px;z-index:80;display:flex;align-items:center;
+  gap:12px;background:var(--navy);color:#fff;border-radius:12px;padding:12px 14px;
+  font-size:13.5px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+.sw-upd span{flex:1}
+.sw-upd-btn{background:#fff;color:var(--navy);border:0;border-radius:8px;padding:8px 14px;
+  font-weight:800;font-size:13px;cursor:pointer}
+@media print{.sw-upd{display:none}}
 .tag-oos{background:#FDE8E4;color:#B3402C;font-weight:700}
 .tag-bo{background:#FFF1D6;color:#8A5A00;font-weight:700}
 html.dark .tag-oos{background:#3A1F1A;color:#F0A090}
@@ -1994,7 +2007,7 @@ function loadCustomers(){
 function saveCustomers(){lsSet('fundi_customers',JSON.stringify(state.customers));}
 const CUSTOMERS=loadCustomers();
 const LANG = {
- en:{sub:"QUOTE BUILDER",hardware:"Sales",offline:"Works offline",cust:"Customer name…",
+ en:{sub:"QUOTE BUILDER",hardware:"Sales",offline:"Works offline",offlineNot:"Needs a connection",updReady:"A new version is ready",updReload:"Reload",cust:"Customer name…",
    reg:"Regular",vip:"VIP",search:"Search products…",all:"All",review:"Review quote",
    quote:"Quote",nocust:"No customer set",total:"Total",wa:"WhatsApp",formal:"Formal quote",
    clear:"Clear quote",watitle:"WhatsApp message",wasub:"Copy or share to your customer",
@@ -2015,7 +2028,7 @@ const LANG = {
  topCats:"Top categories",topCust:"Top customers",sendBoss:"Send report to boss",
  delivNone:"No deliveries waiting today",
  bossReportMsg:"SALES REPORT — {month}\nTotal sales: TSh {total}\nOrders: {orders}\nAvg order: TSh {avg}\nCollected: TSh {paid}\nOutstanding: TSh {owed}\nTop customer: {top}\n— Fundi Sales",orderstitle:"Order history",noorders:"No confirmed orders yet",ordertotal:"{n} orders · TSh {val} total",orderitems:"{n} items",paid:"Paid",unpaid:"Unpaid",payWho:"Who collected it?",payMe:"Me",payDriver:"Driver",payCargo:"Cargo company",payConfirm:"Confirm payment",paidVia:"Paid · {m}",paidTotal:"Collected",outstanding:"Outstanding",payTaskSub:"{n} order awaiting payment",payTaskSubP:"{n} orders awaiting payment",payTaskNm:"Collect payments",reportBoss:"Report collections to boss",hoBossMsg:"Habari boss, makusanyo ya leo:\n\n{lines}\nJumla imekusanywa: TSh {total}\n\nAsante!",payViaCash:"Cash",payViaMobile:"Mobile money",collectedByYou:"you",collectedByDriver:"driver",collectedByCargo:"cargo co.",payRecorded:"Payment recorded!",noBossPhone2:"Enter the boss WhatsApp number in the delivery calculator first.",navquote:"Quote",navcheckins:"Check-ins",checkinstitle:"Morning check-ins",greetbtn:"Greet",greeted:"Greeted",startround:"Start round",roundof:"of",sendwa:"Send on WhatsApp",skip:"Skip",roundmsg:"Message — edit if you like",roundcomplete:"Round complete!",greetedcount:"greeted today",done:"Done",followups:"Follow-ups",waiting:"waiting on a reply",followupbtn:"Follow up",won:"Won",lost:"Lost",nofollow:"All caught up — no quotes waiting",today:"sent today",yest:"sent yesterday",daysago:"sent {n} days ago",al1dyn:"{n} quotes waiting on a reply",fumsg:"Hi {name}, just following up on the quote I sent (TSh {total}). Happy to go ahead, or shall I adjust anything?",actionneeded:"Action needed",confirmorder:"Confirm order",confirmedquote:"{c} confirmed a quote",itemsn:"{n} items",saidyes:"Said yes",rewardmsg:"Order confirmed! +TSh {n}",winstoday:"{n} wins today",stock:"Stock",stockApprox:"Depot: ~{n}",stockOut:"Out of stock",stkOutMsg:"{p} shows nothing in the depot. Put it on the quote anyway?",stkAddAnyway:"Add anyway",stkShortMsg:"The depot shows {n} of {p}, and the quote now says {n}. Add the other {m} as a backorder?",stkBackorder:"Add backorder",stkBackLine:"{n} on backorder",attgreet:"{n} customers not greeted yet today",allgood:"You're all caught up — nice work!",s3b:"Call new and potential customers",taskGreetSub:"{done}/{total} customers greeted",taskFollowSub:"{n} quote waiting · tap to follow up",taskFollowSubP:"{n} quotes waiting · tap to follow up",taskConfirmSub:"{n} order to confirm",taskConfirmSubP:"{n} orders to confirm",taskDeliverSub:"{n} order ready to deliver",taskDeliverSubP:"{n} orders ready for delivery",taskManual:"Tap to mark done",taskDone:"Done",daycomplete:"Siku nzuri, Pauline!",daystats:"{orders} orders confirmed · {greet} customers greeted · {wins} wins today",dayconfirmedval:"TSh confirmed today",daybonus:"toward monthly bonus",deliverytitle:"Deliveries today",delivstops:"{n} stops · {a} areas",delivdriver:"Message driver",delivcust:"Notify customer",delivtuktuknote:"More than 2 areas — check if a tuktuk run is worth it",delivdrivermsg:"Hi, delivery run for today:\n\n{stops}\nPlease confirm when each drop is done. Asante!",delivcustmsg:"Habari {name}! Your order (TSh {total}) is on its way to {area} today. We will call when we are close. Asante!",calcTitle:"Delivery calculator",calcSub:"Check if this delivery is within budget",calcOrderVal:"Total order value (TSh)",calcDelivQuote:"Cargo provider quote (TSh)",calcProvider:"Provider name (e.g. Chanika)",calcCheck:"Check",calcAllowed:"Delivery allowed — within {pct}% budget",calcAllowedSub:"Budget: TSh {budget} · Quote: TSh {quote} · You can approve this",calcApproval:"Approval needed — over budget",calcApprovalSub:"Budget: TSh {budget} · Quote: TSh {quote} · Over by TSh {over}",calcAbsCap:"Also over TSh 100,000 cap — boss approval required regardless",calcSendBoss:"Request boss approval",calcSendDriver:"Send to driver",delivContractBadge:"Delivery budget · TSh {max}",delivCheckBtn:"Delivery",qdTitle:"Quote",qdWon:"Won",qdLost:"Lost",qdOpen:"Waiting",qdOutcome:"What happened",qdClosedIn:"Closed in {n} days",qdLostNote:"This quote was lost",qdOpenNote:"Still waiting on an answer",qdMoreFrom:"See everything from {c}",collIn:"Money collected",collDue:"Money to collect",collCount:"{n} collections",collByMethod:"How it was paid",collByProvider:"By mobile service",collList:"Every collection",collDueSub:"{n} orders awaiting delivery",collNoneDue:"Nothing outstanding \u2014 every order has been delivered and paid.",expTitle:"Explore sales",expSales:"{n} sales",expAvg:"avg TSh {v}",expByCust:"By customer",expByCat:"By category",expByProd:"By product",expByArea:"By area",expOrders:"Transactions ({n})",expNone:"Nothing matches these filters.",expPeriod:"period",per_day:"Today",per_week:"This week",per_month:"This month",per_all:"All time",docBy:"Prepared by {n}",repSalesTitle:"Sales by person",repSalesHint:"Credited when an order is paid and delivered. This device only \u2014 other reps\u2019 sales are on their own phones.",repYou:"you",repUnknown:"Unattributed",repNoSales:"No completed sales yet.",hoTitle:"Cash handover",hoSend:"Send to boss",hoSavePdf:"Save a copy",hoMobile:"Paid by mobile — already with the company",hoMobileTot:"Mobile total",hoMobileNote:"Nothing to hand over for these. Listed so they can be checked against the account.",hoNoRef:"no reference given",hoCash:"Cash to hand over",hoCashTot:"Total cash",hoNothing:"No cash to hand over right now.",hoLockHint:"Once sent, these collections are locked and cannot be changed.",hoSent:"Handover {ref} sent",hoSaved:"Handover {ref} saved",hoMsg:"UKABIDHI WA PESA \u2014 {ref}\nMuuzaji: {rep}\nTarehe: {d}\n\n{lines}\n\nJumla: malipo {n} \u00b7 TSh {total}\n\nNimekabidhi kiasi hiki cha taslimu.",pyTitle:"Record payment",pyAddLbl:"Add a collection",pyAdd:"Add collection",pyCash:"Cash",pyMobile:"Mobile money",pyRecord:"Record payment",pyProvLbl:"Which service?",pyNeedProv:"Choose the mobile money service",pyComplete:"Payment received \u2014 complete delivery",pyRefPh:"Transaction reference (optional)",pyRefHint:"Ask the customer to read out the reference — it lets your boss tick it off against his statement.",pyBalanced:"Fully paid",pyCollected:"TSh {n} collected",pyOutstanding:"TSh {n} still to collect",pyMustBalance:"The full amount must be collected before delivery.",pyBlocked:"TSh {n} still to collect — record it first",pyNeedAmt:"Enter an amount",pyTooMuch:"That is more than the TSh {n} outstanding",pyLocked:"Already handed over — cannot be changed",pyHandedOver:"handed over",cashOnHand:"Cash on you",cashDrops:"{n} collections to hand over",apTitle:"Add product",apSub:"Adds to your catalogue on this phone",apName:"Product name",apCat:"Category",apSize:"Size",apBrand:"Brand",apPrice:"Price (TSh)",apSave:"Save product",apEditTitle:"Edit product",apEditSub:"Changes apply on this phone",apUpdate:"Update product",apUpdated:"{n} updated",apDelAsk:"Remove {n} from your catalogue?",apDeleted:"{n} removed",apEdit:"Edit",apDelete:"Delete",apNeed:"Name, category and a price above zero are required",apSaved:"{n} added to your catalogue",delivDoneBadge:"{prov} · TSh {q} ✓",delivOverBadge:"{prov} · TSh {q} · over budget",delivAwaitBadge:"{prov} · TSh {q} · awaiting boss",delivBossOkBadge:"{prov} · TSh {q} · boss approved",delivBossOkBtn:"Boss said yes",delivBossOkMsg:"Boss approval recorded",delivProvFallback:"Contractor",delivSavedMsg:"Saved to the order",rewardDeliv:"delivery budget TSh {b}",calcBossMsg:"Hi, approval needed for a delivery:\n\nOrder value: TSh {total}\nDelivery quote ({provider}): TSh {quote}\nBudget (3%): TSh {budget}\nOver by: TSh {over}\n\nPlease confirm if I can proceed. Asante!",calcDriverWho:"Who is making this delivery?",calcGoSelf:"I am going",calcSendToDriver:"Send to driver",openCalc:"Check delivery cost",calcReset:"New calculation",calcBossPhone:"Boss WhatsApp number",calcSaveBoss:"Save",noBossPhone:"Please enter the boss's WhatsApp number first.",setupTitle:"Business setup",setupSub:"Takes 30 seconds — appears on every formal quote",setupBizName:"Business name",setupPhone:"Phone number",setupArea:"Area / address",setupSave:"Save & continue",setupRequired:"Please enter your business name to continue.",lqsent:"Quoted {ago} · TSh {amt}",lqwaiting:"Awaiting reply",lqconfirmed:"Confirmed",lqordered:"Ordered ✓",lqlost:"Lost",noquote:"No quotes yet"},
- sw:{sub:"TENGENEZA KADIRIO",hardware:"Mauzo",offline:"Bila intaneti",cust:"Jina la mteja…",
+ sw:{sub:"TENGENEZA KADIRIO",hardware:"Mauzo",offline:"Bila intaneti",offlineNot:"Inahitaji mtandao",updReady:"Toleo jipya lipo tayari",updReload:"Pakia upya",cust:"Jina la mteja…",
    reg:"Kawaida",vip:"VIP",search:"Tafuta bidhaa…",all:"Zote",review:"Angalia kadirio",
    quote:"Kadirio",nocust:"Hakuna mteja",total:"Jumla",wa:"WhatsApp",formal:"Kadirio rasmi",
    clear:"Futa kadirio",watitle:"Ujumbe wa WhatsApp",wasub:"Nakili au tuma kwa mteja",
@@ -2712,7 +2725,7 @@ function reconcileLines(items,total,disc,label){
 
 function applyLang(){
   document.getElementById('brandWord').textContent=t('hardware');
-  document.getElementById('offlineTxt').textContent=t('offline');
+  markOffline();
   document.getElementById('search').placeholder=t('search');
   var _ps=document.getElementById('pSearch');if(_ps)_ps.placeholder=t('search');
   if(typeof apSyncLang==='function')apSyncLang();
@@ -7024,6 +7037,63 @@ setLang(state.lang);
   window.addEventListener('online',updateNetDot);window.addEventListener('offline',updateNetDot);updateNetDot();
   applyAvatar();
   if(getPinHash())showPinLock('unlock'); setTier('regular'); showScreen('home'); if(!state.biz.name){state.biz={name:'Kariakoo Plumbing Supplies Ltd',phone:'+255 000 000 100',extra:'Kariakoo, Dar es Salaam'};saveBiz();}
+/* ---- offline shell ---------------------------------------------------
+   Registration is deferred to load so it never competes with first paint,
+   and every branch is guarded: a file:// open has no service worker at all
+   and must still run exactly as before. */
+function markOffline(){
+  var el=document.getElementById('offlineTxt');if(!el)return;
+  var ok=!!(navigator.serviceWorker&&navigator.serviceWorker.controller);
+  el.textContent=ok?t('offline'):t('offlineNot');
+}
+/* Never dismisses itself and never reloads on its own: she may be mid-quote.
+   The reload is hers to ask for. */
+function swUpdateReady(apply){
+  if(document.getElementById('swUpd'))return;
+  var el=document.createElement('div');
+  el.id='swUpd';el.className='sw-upd';
+  el.innerHTML='<span></span><button class="sw-upd-btn"></button>';
+  el.querySelector('span').textContent=t('updReady');
+  var b=el.querySelector('button');
+  b.textContent=t('updReload');
+  b.onclick=function(){el.remove();apply();};
+  document.body.appendChild(el);
+}
+if('serviceWorker' in navigator&&location.protocol!=='file:'){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      /* a deploy that only changed index.html: the worker notices and tells us */
+      navigator.serviceWorker.addEventListener('message',function(e){
+        if(e.data&&e.data.type==='UPDATED')swUpdateReady(function(){location.reload();});
+      });
+      /* a deploy that changed sw.js: the new worker waits until we ask it not to */
+      reg.addEventListener('updatefound',function(){
+        var w=reg.installing;if(!w)return;
+        w.addEventListener('statechange',function(){
+          if(w.state==='installed'&&navigator.serviceWorker.controller){
+            swUpdateReady(function(){
+              var went=false;
+              navigator.serviceWorker.addEventListener('controllerchange',function(){
+                if(went)return;went=true;location.reload();
+              });
+              w.postMessage({type:'SKIP_WAITING'});
+            });
+          }
+        });
+      });
+    }).catch(function(){});
+    navigator.serviceWorker.addEventListener('controllerchange',markOffline);
+    if(navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(markOffline);
+  });
+}
+/* localStorage is evictable on Android and iOS for a site that has not been
+   installed, and this rep's phone is the only copy of her book. Asking costs
+   nothing and the manifest above is what makes a grant likely. */
+if(navigator.storage&&navigator.storage.persist){
+  try{navigator.storage.persisted().then(function(p){if(!p)return navigator.storage.persist();})
+    .catch(function(){});}catch(e){}
+}
+markOffline();
 </script>
 </body>
 </html>
