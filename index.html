@@ -2200,8 +2200,13 @@ const DEMO_ALL=!DEMO_MODE?[]:(function(){
         var p=CATALOGUE[Math.floor(R()*CATALOGUE.length)];
         if(used[p.id])continue;
         used[p.id]=1;
-        items.push(lineFor(p,scale));
+        items.push(lineFor(p,scale*oj));
       }
+      /* A per-order jitter as well as the per-line one. Without it two
+         orders for the same customer in the same month can land on the
+         same basket and the same total, which reads as a duplicated
+         record rather than the coincidence it is. */
+      var oj=0.82+R()*0.36;
       var delivered=daysAgo>4?true:(R()<0.55);
       out.push({live:m===0,id:'d'+(++seq),custId:c.id,custName:c.biz,area:c.area,person:c.person,phone:c.phone,
         week:daysAgo<28?Math.max(0,3-Math.floor(daysAgo/7)):null,
