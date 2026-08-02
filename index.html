@@ -5372,9 +5372,11 @@ var RP={W:1080,H:1528,M:84,
   f:function(sz,w){return (w||400)+' '+sz+'px system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';}};
 function rpBrand(){return MS_GRADS[(state.biz&&state.biz.cardStyle)||'classic']||MS_GRADS.classic;}
 function rpTx(ctx,str,x,y,size,weight,col,align){
+  str=(str==null?"":String(str));
   ctx.font=RP.f(size,weight);ctx.fillStyle=col||RP.ink;ctx.textAlign=align||'left';
   ctx.textBaseline='alphabetic';ctx.fillText(str,x,y);ctx.textAlign='left';}
 function rpClip(ctx,str,max,size,weight){
+  str=(str==null?"":String(str));
   ctx.font=RP.f(size,weight);
   if(ctx.measureText(str).width<=max)return str;
   var t2=str;while(t2.length>1&&ctx.measureText(t2+'…').width>max)t2=t2.slice(0,-1);
@@ -5403,7 +5405,12 @@ function rpWrap(ctx,str,max,size,weight,maxLines){
   }
   return lines;
 }
+/* A missing string should not be able to bring a document down. This cost
+   a build when a key that looked right (stLifetime) turned out to belong
+   to a different prefix (custLifetime) and t() returned undefined. */
 function rpKpi(ctx,x,y,w,h,label,value,sub){
+  label=(label==null?"":String(label));value=(value==null?"":String(value));
+  sub=(sub==null?"":String(sub));
   rpRR(ctx,x,y,w,h,16);ctx.fillStyle=RP.panel;ctx.fill();
   ctx.strokeStyle=RP.line;ctx.lineWidth=2;ctx.stroke();
   rpTx(ctx,label.toUpperCase(),x+22,y+36,17,700,RP.soft);
@@ -5944,19 +5951,19 @@ function buildCustPages(cb){
   var d=docCanvas(), ctx=d.ctx, out=[];
   var y=rpPageFrame(ctx,rpClip(ctx,nm||'',RP.W-RP.M*2,42,800),docWho(),1,1);
   var cw=(RP.W-RP.M*2-32)/3;
-  rpKpi(ctx,RP.M,y,cw,152,t('stLifetime'),'TSh '+fmtM(cp.totalSpend),t('stOrderCount')+' '+cp.orders.length);
-  rpKpi(ctx,RP.M+cw+16,y,cw,152,t('stAvgOrder'),'TSh '+fmt(cp.avgOrd),
-        cp.winRate!=null?(t('stWinRate')+' '+cp.winRate+'%'):'');
+  rpKpi(ctx,RP.M,y,cw,152,t('custLifetime'),'TSh '+fmtM(cp.totalSpend),t('custOrderCount')+' '+cp.orders.length);
+  rpKpi(ctx,RP.M+cw+16,y,cw,152,t('custAvgOrder'),'TSh '+fmt(cp.avgOrd),
+        cp.winRate!=null?(t('custWinRate')+' '+cp.winRate+'%'):'');
   rpKpi(ctx,RP.M+(cw+16)*2,y,cw,152,t('invBalance'),'TSh '+fmt(cp.outstanding||0),
-        cp.lastDate?(t('stLastOrder')+' '+isoShort(isoDate(new Date(cp.lastDate)))):t('stNoOrders'));
+        cp.lastDate?(t('custLastOrder')+' '+isoShort(isoDate(new Date(cp.lastDate)))):t('custNoOrders'));
   y+=180;
-  var top=rpCard(ctx,RP.M,y,RP.W-RP.M*2,520,t('stHistory'));
+  var top=rpCard(ctx,RP.M,y,RP.W-RP.M*2,520,t('custHistory'));
   var ry=top+10;
   cp.orders.slice(0,11).forEach(function(o){
     rpTx(ctx,isoShort(isoDate(new Date(o.date))),RP.M+28,ry,22,600,RP.soft);
     rpTx(ctx,'TSh '+fmt(o.total),RP.W-RP.M-28,ry,22,700,RP.ink,'right');ry+=40;
   });
-  if(!cp.orders.length)rpTx(ctx,t('stNoOrders'),RP.M+28,ry,22,600,RP.soft);
+  if(!cp.orders.length)rpTx(ctx,t('custNoOrders'),RP.M+28,ry,22,600,RP.soft);
   docFoot(ctx,1,1);
   out.push(d.cv.toDataURL('image/jpeg',.92));cb(out);
 }
