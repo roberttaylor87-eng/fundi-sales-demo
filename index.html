@@ -1264,6 +1264,7 @@ select::-ms-expand{display:none}
 
       <div class="set-section">
         <div class="set-label" id="setPerfTitle">My performance</div>
+        <div class="cust-filter" id="perfChips" style="margin:2px 0 8px"></div>
         <div class="field-hint" id="perfScope" style="margin:-4px 0 8px"></div>
         <div class="set-perf" id="perfGrid"></div>
         <div style="display:flex;gap:9px;margin-top:12px">
@@ -1659,9 +1660,9 @@ select::-ms-expand{display:none}
     <div class="sheet-head"><div><h2 id="rcTitle">Custom range</h2></div>
       <button class="icon-btn" onclick="hide('rangeOverlay')" aria-label="Close">&#10005;</button></div>
     <div class="set-field"><label id="rcFromLbl">From</label>
-      <button class="setup-inp date-field" id="rcFrom" aria-labelledby="rcFromLbl" aria-label="From date" onclick="openRangeCal('from')"></button></div>
+      <button type="button" class="setup-inp date-field" id="rcFrom" aria-labelledby="rcFromLbl" aria-label="From date" onclick="openRangeCal('from')"></button></div>
     <div class="set-field"><label id="rcToLbl">To</label>
-      <button class="setup-inp date-field" id="rcTo" aria-labelledby="rcToLbl" aria-label="To date" onclick="openRangeCal('to')"></button></div>
+      <button type="button" class="setup-inp date-field" id="rcTo" aria-labelledby="rcToLbl" aria-label="To date" onclick="openRangeCal('to')"></button></div>
     <button class="btn btn-primary" id="rcApply" onclick="applyRepCustom()" style="width:100%;margin-top:12px">Apply</button>
   </div>
 </div>
@@ -2922,9 +2923,20 @@ function unitPrice(p){const q=state.quote[p.id];return (q&&q.override!=null)?q.o
    were persisted. Never re-derive a saved line's price from CATALOGUE: that is
    what made an order's lines disagree with its own stored total. The same
    snapshot rule is what makes these records safe to sync later. */
+/* An id->product map, rebuilt when the catalogue changes. linePrice runs for
+   every line of every order on every analytics pass, and a 148-entry linear
+   find each time is a poor thing to hand a low-end phone. */
+var _prodIx=null, _prodIxLen=-1;
+function prodById(id){
+  if(!_prodIx||_prodIxLen!==CATALOGUE.length){
+    _prodIx={};_prodIxLen=CATALOGUE.length;
+    for(var i=0;i<CATALOGUE.length;i++)_prodIx[CATALOGUE[i].id]=CATALOGUE[i];
+  }
+  return _prodIx[id]||null;
+}
 function linePrice(it){
   if(it&&it.unitPrice!=null&&isFinite(+it.unitPrice))return +it.unitPrice;
-  var p=CATALOGUE.find(function(x){return x.id===(it&&it.id);});
+  var p=prodById(it&&it.id);
   return p?p.price:0;
 }
 /* Refuses to let a record be saved whose lines do not add up to the total it
@@ -2954,9 +2966,17 @@ function linePrice(it){
    record whose lines cannot be reconciled at all. The total is the number
    that was agreed and collected against; the lines only say how it was
    made up. */
+var _grossIx=(typeof WeakMap!=='undefined')?new WeakMap():null;
+function recGross(rec){
+  if(!_grossIx)return (rec.items||[]).reduce(function(a,x){return a+linePrice(x)*x.qty;},0);
+  var g=_grossIx.get(rec);
+  if(g==null){g=(rec.items||[]).reduce(function(a,x){return a+linePrice(x)*x.qty;},0);_grossIx.set(rec,g);}
+  return g;
+}
 function lineShare(rec,it){
   if(!rec)return 0;
-  var gross=(rec.items||[]).reduce(function(a,x){return a+linePrice(x)*x.qty;},0);
+  /* cached per record: this was recomputing the whole basket once per line */
+  var gross=recGross(rec);
   if(!gross)return 0;
   return Math.round(linePrice(it)*it.qty*((rec.total||0)/gross));
 }
@@ -5729,15 +5749,11 @@ function buildReportPages(cb){
     }
   });
 
-  /* H5: outstanding belongs where an owner looks first */
-  var oy=RP.H-260;
-  rpRR(ctx,M,oy,RP.W-M*2,86,16);
-  ctx.fillStyle=(owedAll===0)?'#EAF7EF':PANEL;ctx.fill();
-  ctx.strokeStyle=(owedAll===0)?'#BFE3CC':LINE;ctx.lineWidth=2;ctx.stroke();
-  ctx.letterSpacing='1px';
-  rpTx(ctx,t('collDue').toUpperCase(),M+26,oy+34,16,700,SOFT);
-  ctx.letterSpacing='0px';
-  rpTx(ctx,'TSh '+fmt(owedAll),RP.W-M-26,oy+40,30,800,(owedAll===0)?'#15803D':INK,'right');
+  /* Money to collect used to appear here as well as on the Collections
+     page. The argument for the summary was that an owner looks there
+     first; the argument against is that the same figure twice in one
+     document invites the reader to wonder whether they are the same
+     figure. It lives on the Collections page, once. */
 
   /* who prepared it */
   var ry=RP.H-146;
@@ -5989,7 +6005,7 @@ function buildWonPages(cb){
 }
 /* ---- my performance ---------------------------------------------------- */
 function buildPerfPages(cb){
-  var r=reportData();
+  var r=perfData();
   var d=docCanvas(), ctx=d.ctx, out=[];
   var y=rpPageFrame(ctx,t('perfTitle'),
     ((r.range&&r.range.label)||t('rpAllTime'))+'  \u00b7  '+docWho(),1,1);
@@ -6046,7 +6062,7 @@ var DOCS={
   customerProfile:{build:buildCustPages,file:function(){return docName('customer',state.custProfileName);},
                    share:function(){return t('docCustShare').replace('{c}',state.custProfileName||'');}},
   myPerformance:{build:buildPerfPages,file:function(){return docName('performance');},
-                 share:function(){return t('docPerfShare').replace('{p}',(reportData().range||{}).label||'');}}
+                 share:function(){return t('docPerfShare').replace('{p}',(perfData().range||{}).label||'');}}
 };
 /* What the screen actually is, rather than what the button assumes. */
 function activeDocId(){
@@ -6092,11 +6108,17 @@ function rpDeliver(share){
   });}
 function shareReport(){rpDeliver(true);}
 function saveReport(){rpDeliver(false);}
-function setRpPeriod(k){state.rpPeriod=k;renderRpSheet();}
+function setRpPeriod(k){
+  if(k==='custom'){openRepCustom('rp');return;}
+  state.rpPeriod=k;renderRpSheet();
+}
 function renderRpSheet(){
   var el=document.getElementById('rpPeriods');if(!el)return;
   var opts=[['month',t('rpThisMonth')],['last',t('rpLastMonth')],['q',t('rpQuarter')],['all',t('rpAllTime')]];
-  if(state.rpCustom)opts.push(['custom',state.rpCustom.label]);
+  /* Always offered. It used to appear only once a custom range existed,
+     and nothing in the build could create one  the sheet, the fields and
+     the calendar were all written and unreachable. */
+  opts.push(['custom',state.rpCustom?state.rpCustom.label:t('repCustom')]);
   el.innerHTML=opts.map(function(o){
     return '<button class="cf-btn'+(o[0]===(state.rpPeriod||'all')?' on':'')+'" onclick="setRpPeriod(\''+o[0]+'\')">'+o[1]+'</button>';
   }).join('');
@@ -6506,8 +6528,8 @@ function renderSettings(){
   document.getElementById('setLangEN').classList.toggle('on',state.lang==='en');
   document.getElementById('setLangSW').classList.toggle('on',state.lang==='sw');
   document.getElementById('setDarkBtn').classList.toggle('on',state.dark||false);
-  const r=reportData();
-  /* This panel has no period control of its own: it calls reportData(),
+  const r=perfData();
+  /* Its own period now, not the report screen's.
      which reads whatever range was last chosen on the Sales report screen.
      Rather than have it quietly mean something different from one visit to
      the next, it now says which window it is showing. The alternative -
@@ -6517,6 +6539,16 @@ function renderSettings(){
   if(_pfScope)_pfScope.textContent=t('scopeBasis')
     .replace('{w}',(r.range&&r.range.label)||t('rpAllTime'))
     .replace('{b}',t('basisOrders'));
+  var _pfC=document.getElementById('perfChips');
+  if(_pfC){
+    var _pk=(state.perfRange&&state.perfRange.kind)||'month';
+    _pfC.innerHTML=[['month',t('rpThisMonth')],['last',t('rpLastMonth')],
+                    ['q',t('rpQuarter')],['all',t('rpAllTime')],
+                    ['custom',t('repCustom')]].map(function(k){
+      return '<button class="cf-btn'+(_pk===k[0]?' on':'')+
+        '" onclick="setPerfRange(\''+k[0]+'\')">'+k[1]+'</button>';
+    }).join('');
+  }
   /* every performance figure opens this rep's own transactions */
   var _pfEx=" onclick='openExplore({repId:"+JSON.stringify(REP_ID)+"},"+JSON.stringify(t('perfTitle'))+")'";
   document.getElementById('perfGrid').innerHTML=
@@ -7026,8 +7058,11 @@ function setRepRange(kind){
   if(kind==='custom'){openRepCustom();return;}
   renderReport();
 }
-function openRepCustom(){
-  var r=repRangeOf();
+/* The sheet writes back to whoever opened it. Without a target it always
+   wrote the report screen's range, which is why it could not be reused. */
+function openRepCustom(target){
+  state.rcTarget=target||'report';
+  var r=(state.rcTarget==='perf')?perfRangeOf():repRangeOf();
   var f=new Date(r.from||Date.now()-30*DAY), t2=new Date(r.to||Date.now());
   state.rcFrom=isoDate(f); state.rcTo=isoDate(t2);
   renderRangeFields();
@@ -7044,6 +7079,16 @@ function applyRepCustom(){
      stamped 23:59 and the later one 00:00, silently losing a day at each end */
   if(t2<f){var sw2=f;f=t2;t2=sw2;}
   var from=new Date(f+'T00:00:00').getTime(), to=new Date(t2+'T23:59:59').getTime();
+  var label=repFmtRange(from,to);
+  if(state.rcTarget==='rp'){
+    state.rpCustom={from:from,to:to,label:label};
+    state.rpPeriod='custom';
+    hide('rangeOverlay');renderRpSheet();return;
+  }
+  if(state.rcTarget==='perf'){
+    state.perfRange={kind:'custom',from:from,to:to,label:label};
+    hide('rangeOverlay');renderSettings();return;
+  }
   state.repRange={kind:'custom',from:from,to:to};
   state.repBucket=null;
   hide('rangeOverlay');renderReport();
@@ -7101,6 +7146,33 @@ function computeLedger(range,filters){
     won:q.won.length,lost:q.lost.length,open:q.open.length,
     winRate:q.winRate==null?null:q.winRate,
     range:range||null,filters:f};
+}
+/* My performance had no period of its own: it called reportData(), which
+   reads whatever range was last chosen on the Sales report screen. Round 2
+   made it say so; this gives it its own, so it can be asked a question
+   rather than only answering someone else's. */
+function perfRangeOf(){
+  var pr=state.perfRange||{kind:'month'};
+  if(pr.kind==='custom'&&pr.from!=null&&pr.to!=null)
+    return {kind:'custom',from:pr.from,to:pr.to,label:pr.label||repFmtRange(pr.from,pr.to),hasPrev:false};
+  if(pr.kind==='all')return {kind:'all',from:null,to:null,label:t('rpAllTime'),hasPrev:false};
+  if(pr.kind==='last'){var lp=DATA.shift(DATA.period('month'),-1);
+    return {kind:'last',from:lp.from,to:lp.to,label:repFmtRange(lp.from,lp.to),hasPrev:false};}
+  if(pr.kind==='q'){var qp=DATA.shift(DATA.period('month'),-2), nowq=Date.now();
+    return {kind:'q',from:qp.from,to:nowq,label:repFmtRange(qp.from,nowq),hasPrev:false};}
+  var p=DATA.period('month');
+  return {kind:'month',from:p.from,to:p.to,label:repFmtRange(p.from,p.to),hasPrev:false};
+}
+function perfData(){
+  var R=perfRangeOf();
+  var L=computeLedger({from:R.from,to:R.to});
+  return {range:R,total:L.sales,totalExVat:L.salesExVat,ordersN:L.orders,avg:L.avg,
+          wonPct:L.winRate==null?0:L.winRate,ledger:L};
+}
+function setPerfRange(kind){
+  if(kind==='custom'){openRepCustom('perf');return;}
+  state.perfRange={kind:kind};
+  renderSettings();
 }
 function reportData(){
   var R=repRangeOf();
