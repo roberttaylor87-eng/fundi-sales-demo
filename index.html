@@ -2612,7 +2612,7 @@ const rows=Object.entries(g).map(([area,ords])=>`<div class="deliv-area"><span c
     <div class="deliv-ord-body"${open?'':' style="display:none"'}>
       <div class="deliv-items-list">${items}</div>
       <div class="deliv-sched-row">
-        <button class="ds-btn${o.delivSchedule===new Date().toISOString().slice(0,10)?' on':''}" onclick="event.stopPropagation();scheduleDelivery('${o.id}','today')">${t('schedToday')}</button>
+        <button class="ds-btn${o.delivSchedule===todayISO()?' on':''}" onclick="event.stopPropagation();scheduleDelivery('${o.id}','today')">${t('schedToday')}</button>
         <button class="ds-btn" onclick="event.stopPropagation();scheduleDelivery('${o.id}','tomorrow')">${t('schedTomorrow')}</button>
         <button class="ds-btn" onclick="event.stopPropagation();pickDelivDate('${o.id}')">${t('schedPickDate')}</button>
       </div>
@@ -4081,7 +4081,7 @@ function renderCustProfile(){
     ev.push({ts:q.date,ic:'\u270E',cls:'th-q',title:t('thQuote'),sub:sub,amt:fmtTSh(q.total),oid:null,qid:q.id});
   });
   d.orders.forEach(function(o){
-    var sub=o.delivSchedule?t('thDeliv').replace('{d}',o.delivSchedule):'';
+    var sub=o.delivSchedule?t('thDeliv').replace('{d}',isoShort(o.delivSchedule)):'';
     ev.push({ts:o.date,ic:'\u2714',cls:'th-o',title:t('thOrder'),sub:sub,amt:fmtTSh(o.total),oid:o.id});
   });
   ev.sort(function(a,b){return b.ts-a.ts;});
@@ -5230,7 +5230,7 @@ function ktPdfBlob(pages,aspect){
 function ktPdfName(){
   var to=ktRecipient().nm;
   return 'fundi-catalogue-'+(to?to.replace(/[^A-Za-z0-9]+/g,'-').toLowerCase()+'-':'')
-    +new Date().toISOString().slice(0,10)+'.pdf';
+    +todayISO()+'.pdf';
 }
 function dataURLtoBlob(d){var b=atob(d.split(',')[1]);var u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new Blob([u],{type:'image/jpeg'});}
 /* ================= Business review PDF =================================
@@ -5740,8 +5740,7 @@ function buildReportPages(cb){
   cb(out);
 }
 function rpFileName(){
-  var d=new Date().toISOString().slice(0,10);
-  return ((state.biz&&state.biz.name)||'Fundi').replace(/[^A-Za-z0-9]+/g,'-')+'-review-'+d+'.pdf';}
+  return ((state.biz&&state.biz.name)||'Fundi').replace(/[^A-Za-z0-9]+/g,'-')+'-review-'+todayISO()+'.pdf';}
 function rpDeliver(share){
   /* synchronous callback on purpose: the anchor click below has to stay inside
      the tap that started it or Android drops the download */
@@ -6426,7 +6425,7 @@ function exportCSV(){
   csv+='Owed,'+r.owed+'\n';
   r.top.forEach(([nm,v])=>{csv+='Top: '+nm+','+v+'\n';});
   const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fundi_performance_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fundi_performance_'+todayISO()+'.csv';a.click();
 }
 function exportPerfPDF(){printReport();}
 /* Was localStorage.clear() — which destroyed the PIN, the business details,
@@ -6929,8 +6928,8 @@ function printReport(){
 }
 function toggleDelivOrder(oid){state.expandedDeliv=state.expandedDeliv===oid?null:oid;openDelivSheet();}
 function scheduleDelivery(oid,when){const o=state.orders.find(x=>x.id===oid);if(!o)return;
-  if(when==='today'){o.delivSchedule=new Date().toISOString().slice(0,10);}
-  else if(when==='tomorrow'){const d=new Date();d.setDate(d.getDate()+1);o.delivSchedule=d.toISOString().slice(0,10);}
+  if(when==='today'){o.delivSchedule=todayISO();}
+  else if(when==='tomorrow'){o.delivSchedule=isoPlusDays(1);}
   else{o.delivSchedule=when;}
   o.delivStatus='scheduled';saveOrders();openDelivSheet();renderHome();}
 /* ---- cash handovers -------------------------------------------------- */
@@ -7302,8 +7301,34 @@ function openInvoice(oid){const o=findOrderById(oid);if(!o)return;
     ${payOutstanding(o)>0?docPayBlock():''}
     <div class="fgen">${t('invNotTax')}</div>`;
   show2('formal');}
-function delivDateLabel(d){if(!d)return t('unscheduled');const today=new Date().toISOString().slice(0,10);const tom=new Date(Date.now()+86400000).toISOString().slice(0,10);if(d===today)return t('schedToday');if(d===tom)return t('schedTomorrow');return t('schedFor').replace('{d}',new Date(d+'T00:00').toLocaleDateString(state.lang==='sw'?'sw-TZ':'en-GB',{day:'numeric',month:'short'}));}
+function delivDateLabel(d){if(!d)return t('unscheduled');const today=todayISO();const tom=isoPlusDays(1);if(d===today)return t('schedToday');if(d===tom)return t('schedTomorrow');return t('schedFor').replace('{d}',new Date(d+'T00:00').toLocaleDateString(state.lang==='sw'?'sw-TZ':'en-GB',{day:'numeric',month:'short'}));}
+/* CALENDAR DATES ---------------------------------------------------------
+   isoDate() was already here and already correct; half the app used it and
+   half used new Date().toISOString().slice(0,10), which is a different
+   answer. toISOString converts to UTC first, so anywhere east of Greenwich
+   a local calendar date can come out a day early: local midnight on the
+   29th in Dar es Salaam is 21:00 UTC on the 28th.
+
+   That was not cosmetic. scheduleDelivery wrote the schedule in UTC while
+   pickDelivDate wrote it in local time, and todayDeliveries compared
+   against UTC  so a delivery promised for today could be stored as
+   yesterday, and between local midnight and 03:00 the day's deliveries
+   looked at the wrong day entirely. Quote expiry and delivery promises both
+   ride on this now.
+
+   One rule: a calendar date is derived from local components, always. */
 function isoDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function todayISO(){return isoDate(new Date());}
+function isoPlusDays(k){var d=new Date();d.setDate(d.getDate()+k);return isoDate(d);}
+/* An ISO calendar date shown the way the rest of the app shows dates. The
+   'T00:00' matters: without it the string is parsed as UTC and displays a
+   day early, which is the same bug wearing a different hat. */
+function isoShort(v){
+  if(!v)return '';
+  var d=new Date(String(v)+'T00:00');
+  if(isNaN(d.getTime()))return String(v);
+  return d.toLocaleDateString(state.lang==='sw'?'sw-TZ':'en-GB',{day:'numeric',month:'short'});
+}
 function pickDelivDate(oid){
   state.calMode='deliv';
   /* the range picker retitles this sheet, so put it back */
@@ -7427,7 +7452,7 @@ function removePayment(oid,pid){
 }
 function isPaid(o){return o.delivStatus==='delivered'&&payBalanced(o);}
 function pendingDeliveries(){return state.orders.filter(o=>o.delivStatus!=='delivered');}
-function todayDeliveries(){const today=new Date().toISOString().slice(0,10);return state.orders.filter(o=>o.delivSchedule===today&&o.delivStatus!=='delivered');}
+function todayDeliveries(){const today=todayISO();return state.orders.filter(o=>o.delivSchedule===today&&o.delivStatus!=='delivered');}
 function openDelivSheet(){
   state.delivOpen=true;
   document.getElementById('delivShTitle').textContent=t('deliverytitle');
