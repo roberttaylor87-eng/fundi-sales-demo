@@ -2498,8 +2498,27 @@ const DEMO_HISTORY=DEMO_ALL.filter(function(o){return !o.live;});
 const DEMO_LIVE=DEMO_ALL.filter(function(o){return o.live;});
 /* Prices in this app are exclusive of VAT and VAT is added on top -
    confirmed with Pauline - so an order's total is net plus tax. */
+/* The customer this order was for, from the seed list -- state.customers
+   does not exist yet when the history is stamped. */
+function demoCustomerOf(o){
+  var id=o&&o.custId;
+  if(id==null)return null;
+  for(var i=0;i<DEFAULT_CUSTOMERS.length;i++)
+    if(DEFAULT_CUSTOMERS[i].id===id)return DEFAULT_CUSTOMERS[i];
+  return null;
+}
 function stampVat(o){
-  var V=vatCfg(), net=itemsTotal(o.items);
+  var V=vatCfg();
+  var gross=itemsTotal(o.items);
+  /* custDiscOf is the one resolver: VIP 15, regular 10, or whatever the
+     record carries. A seeded order is discounted by the same rule a real
+     one is, rather than by a second copy of it living here. */
+  var pct=custDiscOf(demoCustomerOf(o));
+  var disc=Math.round(gross*pct/100);
+  var net=gross-disc;
+  /* stamped, not re-derived: moving a customer to VIP tomorrow must not
+     rewrite what they paid last year */
+  o.disc=pct;o.discAmt=disc;
   o.vatRate=V.on?V.rate:0;
   o.vatIncl=!!(V.on&&V.incl);
   if(!V.on){o.vatAmt=0;o.total=net;return;}
