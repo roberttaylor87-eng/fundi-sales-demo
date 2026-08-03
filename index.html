@@ -839,6 +839,7 @@ html.dark .qa-hero-r{background:#2A2215;border-color:#3D3222}
   border-bottom:1px solid var(--line);text-align:left;font:inherit;padding:9px 0}
 .cp-row-empty:last-child{border-bottom:none}
 .cp-row-empty:active{opacity:.6}
+.cp-row-empty:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;border-radius:8px}
 /* the row is a button, so it says so rather than relying on italic grey */
 .cp-add{flex:none;font-size:11px;font-weight:800;color:var(--primary);
   background:var(--primary-tint);border-radius:999px;padding:3px 9px;margin-left:6px}
@@ -890,6 +891,7 @@ html.dark .qa-hero-r{background:#2A2215;border-color:#3D3222}
   border-bottom:1px solid var(--line);text-align:left;font:inherit;padding:9px 0}
 .cp-row-empty:last-child{border-bottom:none}
 .cp-row-empty:active{opacity:.6}
+.cp-row-empty:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;border-radius:8px}
 /* the row is a button, so it says so rather than relying on italic grey */
 .cp-add{flex:none;font-size:11px;font-weight:800;color:var(--primary);
   background:var(--primary-tint);border-radius:999px;padding:3px 9px;margin-left:6px}
@@ -4712,6 +4714,19 @@ function openEditCustomer(nm,field){
 }
 /* After show(), because the sheet animates in and an element inside a
    display:none parent has no position to scroll to yet. */
+/* Scroll a control into view inside the sheet that holds it. General on
+   purpose: anywhere a tap focuses a field inside a sheet should use this,
+   because scrollIntoView will not move a .sheet-body from outside it. */
+function scrollIntoSheet(el){
+  if(!el)return;
+  var box=el.closest?el.closest('.sheet-body'):null;
+  if(!box){try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}return;}
+  var eb=el.getBoundingClientRect(), bb=box.getBoundingClientRect();
+  /* centre it in the sheet's own viewport rather than the document's */
+  var top=box.scrollTop+(eb.top-bb.top)-(bb.height/2-eb.height/2);
+  top=Math.max(0,top);
+  if(box.scrollTo)box.scrollTo({top:top,behavior:'smooth'});else box.scrollTop=top;
+}
 function focusCustField(field){
   var map={phone2:'cePhone2',landmark:'ceLandmark',tin:'ceTin',
            terms:'ceTerms',notes:'ceNotes',disc:'ceDisc',
@@ -4719,7 +4734,8 @@ function focusCustField(field){
   var id=map[field];if(!id)return;
   setTimeout(function(){
     var el=document.getElementById(id);if(!el)return;
-    try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){el.scrollIntoView();}
+    scrollIntoSheet(el);
+    /* preventScroll so the focus does not fight the smooth scroll above */
     try{el.focus({preventScroll:true});}catch(e){el.focus();}
   },220);
 }
