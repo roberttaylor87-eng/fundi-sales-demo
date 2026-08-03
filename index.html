@@ -838,7 +838,7 @@ html.dark .qa-hero-r{background:#2A2215;border-color:#3D3222}
    label on a narrow phone must scroll rather than escape the card */
 .wk-bars{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .rp-tl{min-height:30px;margin-bottom:2px}
-.rp-tl .rp-hbar-nm{width:74px;font-weight:600}
+.rp-tl .rp-hbar-nm{flex:0 0 74px;font-weight:600;margin-bottom:0}
 .rp-tl-on .rp-hbar-nm{color:var(--primary);font-weight:800}
 .rp-tl-on .rp-hbar-track{outline:2px solid var(--primary);outline-offset:2px}
 .rp-more{cursor:pointer;color:var(--primary);font-weight:700}
@@ -865,8 +865,9 @@ html.dark .rp-tb.on{background:var(--primary)}
 html.dark .rp-tag-g{background:#0F2618;color:var(--wa)}
 html.dark .rp-tag-a{background:#2A2215;color:var(--amber)}
 .tc-chev{color:var(--soft);flex:none;margin-left:4px}
-.rp-hbar{display:flex;align-items:center;gap:7px;margin-bottom:7px}
-.rp-hbar-nm{font-size:12.5px;color:var(--ink);width:80px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-hbar{display:flex;align-items:center;gap:7px;margin-bottom:11px;flex-wrap:wrap}
+.rp-hbar-nm{font-size:12.5px;color:var(--ink);flex:1 1 100%;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:1px}
 .rp-hbar-track{flex:1;height:10px;border-radius:10px;background:var(--line);overflow:hidden}
 .rp-hbar-fill{display:block;height:100%;border-radius:10px;background:var(--primary)}
 .rp-hbar-v{font-size:11.5px;font-weight:700;color:var(--ink);width:52px;text-align:right;flex:none}
@@ -3778,7 +3779,7 @@ function renderCatDetail(){
   html+='<div class="rep-card"><div class="rc-title">'+t('productsIn')+'</div>';
   var maxR=d.products.length?d.products[0][1].rev:1;
   d.products.forEach(function(pr){var pct=Math.round(pr[1].rev/maxR*100);
-    html+='<div class="rp-hbar"><span class="rp-hbar-nm" style="width:110px">'+pr[0]+'</span><div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%"></div></div><span class="rp-hbar-v">'+fmtTSh(pr[1].rev)+'</span></div>';
+    html+='<div class="rp-hbar"><span class="rp-hbar-nm">'+pr[0]+'</span><div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%"></div></div><span class="rp-hbar-v">'+fmtTSh(pr[1].rev)+'</span></div>';
     html+='<div style="font-size:11.5px;color:var(--soft);margin:-4px 0 7px 2px">'+t('qtySold').replace('{n}',pr[1].qty)+'</div>';});
   html+='</div>';
   html+='<div class="rep-card"><div class="rc-title">'+t('buyersLbl')+'</div>';
@@ -5104,12 +5105,60 @@ function ktLongDate(ts){
 /* ---- the terms page ----------------------------------------------------- */
 /* Categories with page ranges. Listing all 148 lines would run to four pages
    and simply repeat the catalogue. */
+var KT_TOP=230, KT_BOT=1215, KT_H1=64, KT_H2=96;
+var _ktCtx=null;
+function ktMeasureCtx(){
+  if(_ktCtx)return _ktCtx;
+  var c=document.getElementById('ktCanvas');
+  return (_ktCtx=c?c.getContext('2d'):null);
+}
+/* A row knows its own height, because whether the name fits on one line
+   depends on the price beside it and on the face it is set in. The size is
+   given its own line before the name is ever broken: on a fittings list the
+   size is the only thing separating one elbow from the next. */
+function ktRow(ctx,p){
+  ctx.font='800 34px system-ui,Segoe UI,Roboto,sans-serif';
+  var pr=fmt(p.price), room=1020-ctx.measureText(pr).width-40-60;
+  ctx.font='600 34px system-ui,Segoe UI,Roboto,sans-serif';
+  var full=p.name+(p.size?' \u00b7 '+p.size:'');
+  if(ctx.measureText(full).width<=room)return {p:p,pr:pr,l1:full,l2:'',h:KT_H1};
+  if(p.size&&ctx.measureText(p.name).width<=room)
+    return {p:p,pr:pr,l1:p.name,l2:p.size,h:KT_H2};
+  /* the name alone is too wide, so break it on a word boundary */
+  var words=String(p.name).split(' '), l1='', rest=[];
+  words.forEach(function(w){
+    if(!rest.length&&ctx.measureText(l1?l1+' '+w:w).width<=room){l1=l1?l1+' '+w:w;}
+    else rest.push(w);
+  });
+  /* a single word wider than the column has no break in it; that is the
+     only case where cutting is the last resort rather than the first */
+  if(!l1)return {p:p,pr:pr,l1:ktClip(ctx,p.name,room),l2:p.size||'',h:p.size?KT_H2:KT_H1};
+  ctx.font='600 27px system-ui,Segoe UI,Roboto,sans-serif';
+  var l2=ktClip(ctx,rest.join(' ')+(p.size?' \u00b7 '+p.size:''),room);
+  return {p:p,pr:pr,l1:l1,l2:l2,h:KT_H2};
+}
+function ktPages(){
+  var ctx=ktMeasureCtx();if(!ctx)return [];
+  var pages=[],cur=[],y=KT_TOP;
+  ktItems().forEach(function(p){
+    var r=ktRow(ctx,p);
+    if(cur.length&&y+r.h-44>KT_BOT){pages.push(cur);cur=[];y=KT_TOP;}
+    cur.push(r);y+=r.h;
+  });
+  if(cur.length)pages.push(cur);
+  return pages;
+}
 function ktContents(){
-  var items=ktItems(),per=16,out=[],seen={};
-  items.forEach(function(p,i){
-    var pg=Math.floor(i/per)+3;                 /* cover 1, contents 2 */
-    if(!seen[p.cat]){seen[p.cat]={cat:p.cat,from:pg,to:pg,n:0};out.push(seen[p.cat]);}
-    seen[p.cat].to=pg;seen[p.cat].n++;
+  /* Object.create(null): category names are editable strings, and a {}
+     accumulator keyed by them inherits Object.prototype. */
+  var out=[],seen=Object.create(null);
+  ktPages().forEach(function(rows,pi){
+    var pg=pi+3;                                /* cover 1, contents 2 */
+    rows.forEach(function(r){
+      var c=r.p.cat;
+      if(!seen[c]){seen[c]={cat:c,from:pg,to:pg,n:0};out.push(seen[c]);}
+      seen[c].to=pg;seen[c].n++;
+    });
   });
   return out;
 }
@@ -5315,7 +5364,7 @@ function drawKtAvatarThen(ctx,done){
     ctx.beginPath();ctx.arc(540,380,104,0,7);ctx.stroke();done();};img.src=av;}
   else done();
 }
-function drawKtPage(ctx,items,pageNo,pages,catLabel){
+function drawKtPage(ctx,rows,pageNo,pages,catLabel){
   ctx.fillStyle='#F6F8FB';ctx.fillRect(0,0,1080,1350);
   ctx.fillStyle='#182A4E';ctx.fillRect(0,0,1080,150);
   ctx.textAlign='left';ctx.fillStyle='#FFFFFF';
@@ -5324,26 +5373,21 @@ function drawKtPage(ctx,items,pageNo,pages,catLabel){
   ctx.textAlign='right';ctx.fillStyle='rgba(255,255,255,.85)';
   ctx.font='700 32px system-ui,Segoe UI,Roboto,sans-serif';
   ctx.fillText(catLabel+'  \u00b7  '+pageNo+'/'+pages,1024,92);
-  var y=230;
-  items.forEach(function(p,i){
-    if(i%2===0){ctx.fillStyle='#FFFFFF';ctx.fillRect(40,y-44,1000,64);}
+  var y=KT_TOP;
+  rows.forEach(function(r,i){
+    if(i%2===0){ctx.fillStyle='#FFFFFF';ctx.fillRect(40,y-44,1000,r.h);}
     ctx.fillStyle='#1B2733';
-    /* the price is right-aligned and set heavier, so the room the name has
-       is whatever the price beside it did not take. Draw it first and
-       measure it, rather than guessing at a character count. */
-    ctx.textAlign='right';ctx.font='800 34px system-ui,Segoe UI,Roboto,sans-serif';
-    var pr=fmt(p.price);ctx.fillText(pr,1020,y);
-    var room=1020-ctx.measureText(pr).width-40-60;
-    ctx.textAlign='left';ctx.font='600 34px system-ui,Segoe UI,Roboto,sans-serif';
-    ctx.fillText(ktClip(ctx,p.name+(p.size?' \u00b7 '+p.size:''),room),60,y);
-    y+=64;
+    ctx.textAlign='right';ctx.font='800 34px system-ui,Segoe UI,Roboto,sans-serif';ctx.fillText(r.pr,1020,y);
+    ctx.textAlign='left';ctx.font='600 34px system-ui,Segoe UI,Roboto,sans-serif';ctx.fillText(r.l1,60,y);
+    if(r.l2){ctx.fillStyle='#5C6B7A';ctx.font='600 27px system-ui,Segoe UI,Roboto,sans-serif';ctx.fillText(r.l2,60,y+34);}
+    y+=r.h;
   });
   ctx.fillStyle='#5C6B7A';ctx.textAlign='center';ctx.font='600 28px system-ui,Segoe UI,Roboto,sans-serif';
   ctx.fillText(ktClip(ctx,(state.rep||'')+'  \u00b7  '+((state.biz&&state.biz.phone)||'')+'  \u00b7  '+t('ktFoot').replace('{d}',ktToday()),1000),540,1300);
 }
 function buildKtPages(done){
   var cv=document.getElementById('ktCanvas'),ctx=cv.getContext('2d');
-  var items=ktItems();var per=16;var pages=Math.ceil(items.length/per);
+  var plan=ktPages(), pages=plan.length;
   var out=[];
   drawKtCover(ctx);
   drawKtAvatarThen(ctx,function(){
@@ -5352,7 +5396,7 @@ function buildKtPages(done){
     out.push(cv.toDataURL('image/jpeg',.88));
     var cat=state.ktScope==='all'?t('ktAll'):state.ktScope;
     for(var p=0;p<pages;p++){
-      drawKtPage(ctx,items.slice(p*per,(p+1)*per),p+1,pages,cat);
+      drawKtPage(ctx,plan[p],p+1,pages,cat);
       out.push(cv.toDataURL('image/jpeg',.88));
     }
     drawKtTerms(ctx);
