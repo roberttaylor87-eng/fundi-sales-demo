@@ -623,21 +623,31 @@ html.dark #dateOverlay .sheet{background:#16202B}
 .formal-bar .btn{flex:1;padding:11px}
 .formal-doc{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:24px 22px;color:#1a1a1a}
 body.formal-open{overflow:hidden}.formal-doc .lbl{color:#5A6472}/* the document is paper: ink and paper never follow the app theme */html.dark .formal-doc{color:#1a1a1a}html.dark .formal-doc .fmeta{color:#444}html.dark .formal-doc .fnote{color:#5A6472;border-top-color:#eee}html.dark .formal-doc table{border-color:#e3e8ee}html.dark .formal-doc td,html.dark .formal-doc th{border-color:#e3e8ee}
-.fhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid var(--primary);padding-bottom:14px;margin-bottom:6px}
-.fhead .biz{font-size:19px;font-weight:800;color:var(--primary)}
-.fhead .bizsub{font-size:12px;color:#666;margin-top:3px;line-height:1.5}
+/* The document's whole type scale hangs off --fd. Print changes --fd and
+   nothing else, so screen and paper cannot drift apart: there is one place
+   a size can be changed and it changes both. */
+.formal-doc{--fd:13px;font-size:var(--fd);line-height:1.55}
+.fhead{display:flex;justify-content:space-between;align-items:flex-start;
+  border-bottom:.23em solid var(--primary);padding-bottom:1.08em;margin-bottom:.9em}
+.fhead .biz{font-size:1.46em;font-weight:800;color:var(--primary)}
+.fhead .bizsub{font-size:.92em;color:#666;margin-top:.25em;line-height:1.5}
 .fhead .qt{text-align:right}
-.fhead .qt .t{font-size:20px;font-weight:800;letter-spacing:1px;color:#222}
-.fhead .qt .n{font-size:12px;color:#666;margin-top:4px}
-.fmeta{display:flex;justify-content:space-between;font-size:12px;color:#444;margin:14px 0 16px;gap:16px}
+.fhead .qt .t{font-size:1.54em;font-weight:800;letter-spacing:.05em;color:#222}
+.fhead .qt .n{font-size:.92em;color:#666;margin-top:.33em}
+.fmeta{display:flex;justify-content:space-between;font-size:.92em;color:#444;
+  margin:1.08em 0 1.23em;gap:1.23em}
 .fmeta .fm-rep{text-align:right}
-.fm-mob{font-weight:700;font-size:13px;margin-top:2px;color:#1a1a1a}
+.fm-mob{font-weight:700;font-size:1.08em;margin-top:.17em;color:#1a1a1a}
 /* cell radii need separate borders; collapse was suppressing them */
-.formal-doc table{border-collapse:separate;border-spacing:0}
+.formal-doc table{border-collapse:separate;border-spacing:0;font-size:.96em}
+.formal-doc thead th{font-size:.92em;text-transform:uppercase;letter-spacing:.03em;padding:.62em .7em}
+.formal-doc tbody td{padding:.69em .7em}
+.formal-doc tfoot td{padding:.85em .7em;font-weight:800;font-size:1.15em}
+.formal-doc tfoot tr:last-child td{font-size:1.42em}
 .formal-doc thead th:first-child{border-radius:10px 0 0 10px}
 .formal-doc thead th:last-child{border-radius:0 10px 10px 0}
-.fmeta .to .lbl{color:#5A6472;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
-.fmeta .to .nm{font-weight:700;font-size:14px;margin-top:2px}
+.fmeta .to .lbl{color:#5A6472;font-size:.88em;text-transform:uppercase;letter-spacing:.045em}
+.fmeta .to .nm{font-weight:700;font-size:1.17em;margin-top:.17em}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 thead th{background:var(--primary);color:#fff;text-align:left;padding:8px 9px;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
 thead th.r{text-align:right}
@@ -645,9 +655,10 @@ tbody td{padding:9px;border-bottom:1px solid #eee}
 tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
 tfoot td{padding:11px 9px;font-weight:800;font-size:15px}
 tfoot td.tot{text-align:right;color:var(--primary)}
-.fnote{font-size:12px;color:#5A6472;margin-top:18px;line-height:1.6;border-top:1px solid #eee;padding-top:12px}
-.fcontact{font-size:12px;color:#1a1a1a;font-weight:700;margin-top:8px}
-.fgen{font-size:11px;color:#5A6472;margin-top:6px}
+.fnote{font-size:.92em;color:#5A6472;margin-top:1.38em;line-height:1.6;
+  border-top:1px solid #eee;padding-top:.92em}
+.fcontact{font-size:.92em;color:#1a1a1a;font-weight:700;margin-top:.77em}
+.fgen{font-size:.85em;color:#5A6472;margin-top:.46em}
 
 
 .wabox{padding:16px}
@@ -983,32 +994,35 @@ body.print-formal .formal,body:has(.formal.show) .formal{display:block!important
 /* never paginate a scroll container */
 .formal-doc{padding:0;overflow:visible!important;height:auto!important}
 
-/* Legible on cheap paper in poor light: 10.5pt body, TOTAL dominant. */
-.formal-doc{font-size:10.5pt;line-height:1.55;color:#1a1a1a}
-.formal-doc .fhead{border-bottom:2pt solid #1a1a1a;padding-bottom:11pt;margin-bottom:12pt}
-.formal-doc .fhead .biz{font-size:16pt;color:#1a1a1a!important}
-.formal-doc .fhead .bizsub{font-size:10pt;color:#333!important;line-height:1.55;margin-top:5pt}
-.formal-doc .fhead .qt .t{font-size:18pt;letter-spacing:1.5pt;color:#1a1a1a!important}
-.formal-doc .fhead .qt .n{font-size:10pt;color:#333!important;margin-top:5pt}
-.formal-doc .fmeta{font-size:10.5pt;margin:0 0 16pt}
-.formal-doc .fmeta .to .lbl{font-size:9pt;color:#444!important;letter-spacing:.6pt}
-.formal-doc .fmeta .to .nm{font-size:13pt;margin-top:3pt}
-.formal-doc .fm-mob{font-size:11.5pt;margin-top:3pt;color:#1a1a1a!important}
+/* Paper is bigger than a phone, so the base grows -- and that is the only
+   thing about the type that print says. Every size in the document is an
+   em of this, so the whole scale moves together and the layout the rep
+   reviewed is the layout the customer receives. */
+.formal-doc{--fd:11.5pt;color:#1a1a1a}
+/* Ink, not theme: these are colours, which paper is allowed to have an
+   opinion about. The header rule goes near-black because a coloured rule
+   is the first thing a greyscale printer flattens into nothing. */
+.formal-doc .fhead{border-bottom-color:#1a1a1a}
+.formal-doc .fhead .biz,.formal-doc .fhead .qt .t,
+.formal-doc .fm-mob,.formal-doc .fcontact{color:#1a1a1a!important}
+.formal-doc .fhead .bizsub,.formal-doc .fhead .qt .n,
+.formal-doc .fmeta .to .lbl{color:#333!important}
 
 /* Header ink, not header fill: survives greyscale and the Background graphics
    checkbox, which is off by default and drops the blue. */
 .formal-doc thead{display:table-header-group}
-.formal-doc thead th{background:transparent!important;color:#1a1a1a!important;font-size:9.5pt;
-  border-top:1.5pt solid #1a1a1a;border-bottom:1.5pt solid #1a1a1a;padding:7pt 6pt}
-.formal-doc tbody td{padding:7pt 6pt;border-bottom:.75pt solid #b8b8b8}
+/* A filled table header is the other thing paper loses: Background graphics
+   is off by default in every print dialogue, so the blue block disappears
+   and takes its white text with it. Rules instead of fill, and the radii
+   that shaped the fill go with it. */
+.formal-doc thead th{background:transparent!important;color:#1a1a1a!important;
+  border-radius:0!important;border-top:1.5pt solid #1a1a1a;border-bottom:1.5pt solid #1a1a1a}
+.formal-doc tbody td{border-bottom:.75pt solid #b8b8b8}
 .formal-doc tfoot{break-inside:avoid;page-break-inside:avoid}
-.formal-doc tfoot td{font-size:12pt;padding:8pt 6pt;color:#1a1a1a!important}
-.formal-doc tfoot tr:last-child td{font-size:17pt;border-top:1.5pt solid #1a1a1a;padding-top:11pt}
-
-.formal-doc .fnote{font-size:10pt;color:#333!important;margin-top:18pt;padding-top:11pt;
-  border-top:.75pt solid #b8b8b8;line-height:1.7}
-.formal-doc .fcontact{font-size:11pt;color:#1a1a1a!important;font-weight:700;margin-top:10pt}
-.formal-doc .fgen{font-size:9pt;color:#555!important;margin-top:7pt}
+.formal-doc tfoot td{color:#1a1a1a!important}
+.formal-doc tfoot tr:last-child td{border-top:1.5pt solid #1a1a1a;padding-top:.7em}
+.formal-doc .fnote{color:#333!important;border-top:.75pt solid #b8b8b8}
+.formal-doc .fgen{color:#555!important}
 }
 
 /* ---- selects: shape and chevron ---------------------------------------
