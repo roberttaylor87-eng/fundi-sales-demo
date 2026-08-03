@@ -7431,9 +7431,16 @@ function personalRecords(){
     if(!bestDay||e[1].sum>bestDay.sum)bestDay={key:e[0],sum:e[1].sum,n:e[1].n};
     if(!mostDay||e[1].n>mostDay.n)mostDay={key:e[0],sum:e[1].sum,n:e[1].n};
   });
-  var weekSums=[0,0,0,0];
-  DEMO_HISTORY.forEach(function(o){if(o.week==null)return;weekSums[o.week]+=o.total;});
-  state.orders.forEach(function(o){weekSums[3]+=o.total;});
+  /* By date, over every order. The o.week field was stamped at seed time
+     and only onto history, so live orders had to be added by hand -- and
+     they were all added to week 3 regardless of when they happened. */
+  var weekSums=[0,0,0,0], _now=Date.now();
+  all.forEach(function(o){
+    var d=Math.floor((_now-o.date)/DAY);
+    if(d<0||d>=28)return;
+    var idx=3-Math.floor(d/7);
+    if(idx>=0&&idx<4)weekSums[idx]+=(o.total||0);
+  });
   var bestWeekIdx=0;weekSums.forEach(function(v,i){if(v>weekSums[bestWeekIdx])bestWeekIdx=i;});
   var custMap={};all.forEach(function(o){custMap[o.custName]=(custMap[o.custName]||0)+o.total;});
   var topC=Object.entries(custMap).sort(function(a,b){return b[1]-a[1];})[0];
