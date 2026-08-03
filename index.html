@@ -28,7 +28,6 @@ html.dark .tbdg{background:#2A2215;border-color:#3D3222;color:#EAA24B}
 html.dark .stat{background:#1B2733;border-color:#2F3B47}
 html.dark .rep-card{background:#1B2733;border-color:#2F3B47}
 html.dark .split-bar span:first-child{background:#2ABF6A}
-html.dark .sendboss{background:#2ABF6A}
 
 html.dark input,html.dark .setup-inp{background:#1B2733;border-color:#2F3B47;color:#E8ECF1}
 html.dark .sheet{background:#1B2733}
@@ -613,7 +612,7 @@ html.dark #dateOverlay .sheet{background:#16202B}
 .btn-formal{background:var(--ink);color:var(--paper)}
 .clear-pill{background:var(--danger)!important;color:#fff!important;border:none!important;border-radius:999px!important;padding:10px 24px!important;font-weight:800;letter-spacing:.2px}
 .clear-pill:active{filter:brightness(.85)}
-.btn-ghost{background:transparent;color:var(--danger);font-size:12.5px;font-weight:700;border:none;cursor:pointer;width:100%;padding:10px;margin-top:4px}
+.btn-danger-text{background:transparent;color:var(--danger);font-size:12.5px;font-weight:700;border:none;cursor:pointer;width:100%;padding:10px;margin-top:4px}
 
 /* Formal quote */
 .formal{position:fixed;left:0;right:0;bottom:0;top:64px;z-index:60;background:#fff;display:none;flex-direction:column;max-width:520px;margin:0 auto}
@@ -1390,7 +1389,7 @@ select::-ms-expand{display:none}
         <button class="btn btn-wa" id="waBtn" onclick="openWhatsApp()">WhatsApp</button>
         <button class="btn btn-formal" id="formalBtn" onclick="openFormal()">Formal quote</button>
       </div>
-      <button class="btn-ghost clear-pill" id="clearBtn" onclick="clearQuote()">Clear quote</button>
+      <button class="btn-danger-text clear-pill" id="clearBtn" onclick="clearQuote()">Clear quote</button>
     </div>
   </div>
 </div>
@@ -1512,7 +1511,7 @@ select::-ms-expand{display:none}
         <button class="btn btn-wa" style="flex:1;padding:11px" id="pxKt" onclick="pxSendKt()">Katalogi</button>
         <button class="btn btn-primary" style="flex:1;padding:11px" id="pxWon" onclick="pxConvert()">Won — make customer</button>
       </div>
-      <button class="btn-ghost clear-pill" style="width:100%" id="pxDel" onclick="pxDelete()">Remove</button>
+      <button class="btn-danger-text clear-pill" style="width:100%" id="pxDel" onclick="pxDelete()">Remove</button>
     </div>
   </div>
 </div>
@@ -2551,7 +2550,7 @@ function renderCalc(){
   if(r){
     const pct=Math.round(r.quote/r.order*100*10)/10;
     const barW=Math.min(100,Math.round(r.quote/(r.allowance||1)*100));
-    const barCol=r.ok?'var(--wa)':'var(--danger)';
+    const barCol=r.ok?'var(--good)':'var(--danger)';
     const absCap=r.quote>DELIV_CAP;
     if(r.ok&&!absCap){
       resultHtml=`<div class='calc-result green'>`
@@ -2649,7 +2648,7 @@ const rows=Object.entries(g).map(([area,ords])=>`<div class="deliv-area"><span c
       </div>
     </div></div>`;}).join('')}</div>`).join('');
 const totalOrderVal=orders.reduce((s,o)=>s+o.total,0);
-return `<div class="deliv-card"><div class="deliv-head" onclick="toggleDeliv()"><div><div class="deliv-title">${t('deliverytitle')}</div><div class="deliv-sub">${plural(no,'stop','stops')+' \u00b7 '+plural(na,'area','areas')}</div></div>${chev(state.delivOpen)}</div><div class="deliv-body"${state.delivOpen?'':' style="display:none"'}><button class="btn btn-primary deliv-driver" onclick="sendDriverWA()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:7px;margin-bottom:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2z"/></svg>${t('delivdriver')}</button><button class="btn" style="width:100%;margin-bottom:11px;background:var(--paper);border:1.5px solid var(--line);color:var(--primary);font-size:13px;padding:10px;display:flex;align-items:center;justify-content:center;gap:7px" onclick="openCalc(${totalOrderVal})"><svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><rect x='2' y='3' width='20' height='18' rx='2'/><path d='M8 10h8M8 14h5'/></svg>${t('openCalc')}</button>${rows}</div></div>`;}
+return `<div class="deliv-card"><div class="deliv-head" onclick="toggleDeliv()"><div><div class="deliv-title">${t('deliverytitle')}</div><div class="deliv-sub">${plural(no,'stop','stops')+' \u00b7 '+plural(na,'area','areas')}</div></div>${chev(state.delivOpen)}</div><div class="deliv-body"${state.delivOpen?'':' style="display:none"'}><button class="btn btn-wa deliv-driver" onclick="sendDriverWA()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:7px;margin-bottom:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2z"/></svg>${t('delivdriver')}</button><button class="btn" style="width:100%;margin-bottom:11px;background:var(--paper);border:1.5px solid var(--line);color:var(--primary);font-size:13px;padding:10px;display:flex;align-items:center;justify-content:center;gap:7px" onclick="openCalc(${totalOrderVal})"><svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><rect x='2' y='3' width='20' height='18' rx='2'/><path d='M8 10h8M8 14h5'/></svg>${t('openCalc')}</button>${rows}</div></div>`;}
 
 function showReward(msg){const el=document.getElementById('reward');document.getElementById('rewardTxt').textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1500);}
 function greetMsg(c){const tpl=GREETINGS.sw[(c.id-1)%3];const first=c.person.split(' ')[0];
@@ -4036,7 +4035,7 @@ function renderWonAnalysis(){
   html+='<div class="rep-card"><div class="rc-title">'+t('wonByCust')+'</div>';
   cust.slice(0,10).forEach(function(e){
     var r=e[1],dec=r.w+r.l,pct=dec?Math.round(r.w/dec*100):100;
-    var col=pct>=70?'var(--wa)':(pct>=50?'var(--amber)':'var(--danger)');
+    var col=pct>=70?'var(--good)':(pct>=50?'var(--amber)':'var(--danger)');
     html+='<div class="rp-hbar exp-row" onclick=\'openExplore({custName:'+JSON.stringify(e[0])+'},'+JSON.stringify(e[0])+')\'>'
       +'<span class="rp-hbar-nm">'+e[0]+'</span>'
       +'<div class="rp-hbar-track"><div class="rp-hbar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
