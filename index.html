@@ -589,7 +589,9 @@ html.dark #dateOverlay .sheet{background:#16202B}
 .badge{font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.4px}
 .badge.reg{background:var(--primary-tint);color:var(--primary-dark)}
 .badge.vip{background:var(--amber-tint);color:var(--amber)}
-.x{border:none;background:var(--paper);width:44px;height:44px;border-radius:10px;font-size:18px;cursor:pointer;color:var(--soft)}
+.x,.icon-btn{border:none;background:var(--paper);width:44px;height:44px;border-radius:10px;
+  cursor:pointer;color:var(--soft);display:inline-flex;align-items:center;justify-content:center;
+  padding:0;flex:none}
 .sheet-body{overflow-y:auto;padding:14px 16px;flex:1}
 .qline{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px}
 .qline .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -1377,7 +1379,7 @@ select::-ms-expand{display:none}
   <div class="sheet">
     <div class="sheet-head">
       <div><h2 id="qTitle">Quote</h2><div class="who" id="qWho">No customer set</div></div>
-      <button class="x" onclick="closeQuote()">✕</button>
+      <button class="x" aria-label="Close" onclick="closeQuote()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-body" id="qBody"></div>
     <div class="sheet-foot">
@@ -1396,7 +1398,7 @@ select::-ms-expand{display:none}
   <div class="sheet">
     <div class="sheet-head">
       <div><h2 id="waTitle">WhatsApp message</h2><div class="who" id="waSub">Copy or share to your customer</div></div>
-      <button class="x" onclick="hide('waOverlay')">✕</button>
+      <button class="x" aria-label="Close" onclick="hide('waOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="wabox"><textarea id="waText" aria-labelledby="waTitle"></textarea></div>
     <div class="sheet-foot"><div class="actions">
@@ -1410,7 +1412,7 @@ select::-ms-expand{display:none}
   <div class="sheet">
     <div class="sheet-head">
       <div><h2 id="custTitle">Choose customer</h2></div>
-      <button class="x" onclick="hide('custOverlay')">✕</button>
+      <button class="x" aria-label="Close" onclick="hide('custOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-body">
       <div class="newcust-form" id="newCustForm">
@@ -1486,7 +1488,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="pAddOverlay">
   <div class="sheet" style="max-width:380px;min-height:0">
     <div class="sheet-head"><div><h2 id="paTitle">New shop</h2></div>
-      <button class="x" onclick="hide('pAddOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('pAddOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div class="pay-lbl" id="paNameLbl">Duka name</div>
       <input aria-labelledby="paNameLbl" id="paName" class="setup-inp" style="margin-bottom:9px">
@@ -1502,7 +1504,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="pActOverlay">
   <div class="sheet" style="max-width:400px;min-height:0">
     <div class="sheet-head"><div><h2 id="pxName">-</h2><div class="who" id="pxSub"></div></div>
-      <button class="x" onclick="hide('pActOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('pActOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div class="cust-filter" id="pxStages" style="flex-wrap:wrap;margin-bottom:12px"></div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -1517,7 +1519,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="custEditOverlay">
   <div class="sheet" style="max-width:420px;min-height:0">
     <div class="sheet-head"><div><h2 id="ceTitle">Edit customer</h2><div class="who" id="ceSub">Update their details</div></div>
-      <button class="x" onclick="hide('custEditOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('custEditOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div class="pay-lbl" id="ceBizLbl">Business name</div>
       <input aria-labelledby="ceBizLbl" id="ceBiz" class="setup-inp" style="margin-bottom:10px" autocomplete="off">
@@ -1550,7 +1552,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="hoSheet" style="z-index:65">
   <div class="sheet" style="max-width:440px;min-height:0">
     <div class="sheet-head"><div><h2 id="hoTitle">Cash handover</h2><div class="who" id="hoSub"></div></div>
-      <button class="x" onclick="hide('hoSheet')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('hoSheet')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div id="hoBody"></div>
       <button class="btn btn-wa" id="hoSendBtn" style="width:100%;padding:12px;font-size:14px;margin-top:12px" onclick="sendHandover()">Send to boss</button>
@@ -1563,7 +1565,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="paySheet" style="z-index:65">
   <div class="sheet" style="max-width:420px;min-height:0">
     <div class="sheet-head"><div><h2 id="pyTitle">Record payment</h2><div class="who" id="pySub"></div></div>
-      <button class="x" onclick="hide('paySheet')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('paySheet')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div id="pyBody"></div>
       <div class="pay-lbl" id="pyAddLbl">Add a collection</div>
@@ -1589,7 +1591,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="prodOverlay">
   <div class="sheet" style="max-width:420px;min-height:0">
     <div class="sheet-head"><div><h2 id="apTitle">Add product</h2><div class="who" id="apSub">Adds to your catalogue on this phone</div></div>
-      <button class="x" onclick="hide('prodOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('prodOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div class="pay-lbl" id="apNameLbl">Product name</div>
       <input aria-labelledby="apNameLbl" id="apName" class="setup-inp" style="margin-bottom:10px" autocomplete="off">
@@ -1627,7 +1629,7 @@ select::-ms-expand{display:none}
   <div class="sheet" style="max-width:420px">
     <div class="sheet-head">
       <div><h2 id="qeTitle" style="font-size:15px"></h2><div class="who" id="qeName"></div></div>
-      <button class="x" onclick="hide('qtyOverlay')">✕</button>
+      <button class="x" aria-label="Close" onclick="hide('qtyOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-body" style="padding:18px 16px">
       <input id="qeInput" aria-labelledby="qeTitle" class="setup-inp" type="number" inputmode="numeric" min="0"
@@ -1642,7 +1644,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="ktOverlay">
   <div class="sheet" style="min-height:0">
     <div class="sheet-head"><div><h2 id="ktTitle">Katalogi</h2><div class="who" id="ktSub">Send your range to a new duka</div></div>
-      <button class="x" onclick="hide('ktOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('ktOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div class="pay-lbl" id="ktToLbl">Who is it for? (optional)</div>
       <select aria-labelledby="ktToLbl" id="ktTo" class="setup-inp" style="margin-bottom:10px"></select>
@@ -1664,7 +1666,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="rangeOverlay" style="z-index:60">
   <div class="sheet" style="max-width:380px;min-height:0">
     <div class="sheet-head"><div><h2 id="rcTitle">Custom range</h2></div>
-      <button class="icon-btn" onclick="hide('rangeOverlay')" aria-label="Close">&#10005;</button></div>
+      <button class="icon-btn" onclick="hide('rangeOverlay')" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="set-field"><label id="rcFromLbl">From</label>
       <button type="button" class="setup-inp date-field" id="rcFrom" aria-labelledby="rcFromLbl" aria-label="From date" onclick="openRangeCal('from')"></button></div>
     <div class="set-field"><label id="rcToLbl">To</label>
@@ -1676,7 +1678,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="rpOverlay">
   <div class="sheet" style="max-width:420px;min-height:0">
     <div class="sheet-head"><div><h2 id="rpTitle">Business review</h2><div class="sheet-sub" id="rpSub">A report you can send to anyone</div></div>
-      <button class="icon-btn" onclick="hide('rpOverlay')" aria-label="Close">&#10005;</button></div>
+      <button class="icon-btn" onclick="hide('rpOverlay')" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="set-field"><label id="rpPeriodLbl">Period</label>
       <div class="cust-filter" id="rpPeriods" style="flex-wrap:wrap;margin:0"></div></div>
     <div id="rpSummary" class="field-hint" style="margin:10px 0 14px"></div>
@@ -1688,7 +1690,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="cardOverlay">
   <div class="sheet" style="max-width:380px;min-height:0">
     <div class="sheet-head"><div><h2 id="cardStyleTitle">Card style</h2></div>
-      <button class="x" onclick="hide('cardOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('cardOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:14px 16px 18px">
       <div id="cardSwatches" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
     </div>
@@ -1698,7 +1700,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="dateOverlay" style="z-index:68">
   <div class="sheet" style="max-width:340px">
     <div class="sheet-head"><div><h2 id="dateTitle">Delivery date</h2><div class="who" id="dateSub"></div></div>
-      <button class="x" onclick="hide('dateOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('dateOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:14px 16px 16px">
       <div class="cal-head">
         <button class="cal-nav" id="calPrev" onclick="navCal(-1)" aria-label="Previous month">‹</button>
@@ -1718,7 +1720,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="followOverlay">
   <div class="sheet">
     <div class="sheet-head"><div><h2 id="fuTitle">Follow-ups</h2><div class="who" id="fuSub"></div></div>
-      <button class="x" onclick="hide('followOverlay')">✕</button></div>
+      <button class="x" aria-label="Close" onclick="hide('followOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" id="fuBody"></div>
   </div>
 </div>
@@ -1741,7 +1743,7 @@ select::-ms-expand{display:none}
   <div class="sheet" style="max-width:420px">
     <div class="sheet-head">
       <div><h2 id="peTitle" style="font-size:15px"></h2><div class="who" id="peName"></div></div>
-      <button class="x" onclick="hide('priceOverlay')">✕</button>
+      <button class="x" aria-label="Close" onclick="hide('priceOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-body" style="padding:18px 16px">
       <input id="peInput" aria-labelledby="peTitle" class="setup-inp" type="number" inputmode="numeric" style="font-size:18px;font-weight:700;text-align:center">
@@ -1754,7 +1756,7 @@ select::-ms-expand{display:none}
   <div class="sheet">
     <div class="sheet-head">
       <div><h2 id="delivShTitle">Deliveries</h2><div class="who" id="delivShSub"></div></div>
-      <button class="x" onclick="hide('delivOverlay')">✕</button>
+      <button class="x" aria-label="Close" onclick="hide('delivOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-body" id="delivShBody" style="padding:14px 16px"></div>
   </div>
@@ -1783,7 +1785,7 @@ select::-ms-expand{display:none}
     <div class="sheet">
       <div class="sheet-head">
         <div><h2 id="legalTitle">Terms & conditions</h2><div class="who" id="legalSub"></div></div>
-        <button class="icon-btn" aria-label="Close" onclick="hide('legalOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <button class="icon-btn" aria-label="Close" onclick="hide('legalOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
       <div class="sheet-body" id="legalBody" style="font-size:12.5px;line-height:1.65;color:var(--ink)"></div>
     </div>
@@ -1793,7 +1795,7 @@ select::-ms-expand{display:none}
     <div class="sheet">
       <div class="sheet-head">
         <div><h2 id="rvTitle">Review order</h2><div class="who" id="rvCust"></div></div>
-        <button class="icon-btn" aria-label="Close" onclick="closeReview()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <button class="icon-btn" aria-label="Close" onclick="closeReview()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
       <div class="sheet-body" id="rvBody"></div>
       <div class="sheet-foot">
@@ -1808,7 +1810,7 @@ select::-ms-expand{display:none}
     <div class="sheet-head">
       <div><h2 id="calcTitle">Delivery calculator</h2>
       <div class="who" id="calcSub">Check if this delivery is within budget</div></div>
-      <button class="x" onclick="hide('calcOverlay')">✕</button>
+      <button class="x" aria-label="Close" onclick="hide('calcOverlay')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="sheet-body" id="calcBody" style="padding:16px"></div>
   </div>
@@ -1817,7 +1819,7 @@ select::-ms-expand{display:none}
 <div class="overlay" id="krSetup">
   <div class="sheet" style="max-width:440px;min-height:0">
     <div class="sheet-head"><div><h2 id="krTitle">Price list round</h2><div class="who" id="krSub"></div></div>
-      <button class="x" onclick="hide('krSetup')">&#10005;</button></div>
+      <button class="x" aria-label="Close" onclick="hide('krSetup')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" id="krSetupBody" style="padding:12px 16px 16px"></div>
   </div>
 </div>
@@ -1825,14 +1827,14 @@ select::-ms-expand{display:none}
 <div class="overlay" id="krFollowOv">
   <div class="sheet" style="max-width:440px;min-height:0">
     <div class="sheet-head"><div><h2 id="krFollowTitle">Follow up</h2><div class="who" id="krFollowSub"></div></div>
-      <button class="x" onclick="hide('krFollowOv')">&#10005;</button></div>
+      <button class="x" aria-label="Close" onclick="hide('krFollowOv')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" id="krFollowBody" style="padding:12px 16px 16px"></div>
   </div>
 </div>
 
 <div class="roundview" id="krView">
   <div class="round-bar">
-    <button class="x" onclick="krPause()">&#10005;</button>
+    <button class="x" aria-label="Close" onclick="krPause()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div style="flex:1">
       <div class="rcount" id="krCount"></div>
       <div class="bbar" style="margin-top:6px"><div class="bfill" id="krFill" style="background:var(--wa)"></div></div>
@@ -1843,7 +1845,7 @@ select::-ms-expand{display:none}
 
 <div class="roundview" id="roundView">
   <div class="round-bar">
-    <button class="x" onclick="closeRound()">✕</button>
+    <button class="x" aria-label="Close" onclick="closeRound()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div style="flex:1">
       <div class="rcount" id="rCount"></div>
       <div class="bbar" style="margin-top:6px"><div class="bfill" id="rFill" style="background:var(--wa)"></div></div>
