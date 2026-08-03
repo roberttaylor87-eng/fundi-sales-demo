@@ -394,6 +394,9 @@ html.dark .cust-av{background:#1C2D40;border-color:#5B9EF4;color:#5B9EF4}
   gap:12px;background:var(--navy);color:#fff;border-radius:12px;padding:12px 14px;
   font-size:13.5px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.28)}
 .sw-upd span{flex:1}
+/* The banner is fixed and does not dismiss itself, so whatever is scrolling
+   underneath has to end above it rather than behind it. */
+body.has-swupd .screen,body.has-swupd .formal-doc,body.has-swupd .sheet-body{padding-bottom:82px}
 .sw-upd-btn{background:#fff;color:var(--navy);border:0;border-radius:8px;padding:8px 14px;
   font-weight:800;font-size:13px;cursor:pointer}
 @media print{.sw-upd{display:none}}
@@ -9265,8 +9268,13 @@ function swUpdateReady(apply){
   el.querySelector('span').textContent=t('updReady');
   var b=el.querySelector('button');
   b.textContent=t('updReload');
-  b.onclick=function(){el.remove();apply();};
+  b.onclick=function(){
+    el.remove();
+    document.body.classList.remove('has-swupd');
+    apply();
+  };
   document.body.appendChild(el);
+  document.body.classList.add('has-swupd');
 }
 if('serviceWorker' in navigator&&location.protocol!=='file:'){
   window.addEventListener('load',function(){
