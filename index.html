@@ -8395,6 +8395,91 @@ setLang(state.lang);
   window.addEventListener('online',updateNetDot);window.addEventListener('offline',updateNetDot);updateNetDot();
   applyAvatar();
   if(getPinHash())showPinLock('unlock'); setTier('regular'); showScreen('home'); if(!state.biz.name){state.biz={name:'Kariakoo Plumbing Supplies Ltd',phone:'+255 000 000 100',extra:'Kariakoo, Dar es Salaam'};saveBiz();}
+/* ---- durable mirror ---------------------------------------------------
+   localStorage is evictable on Android and iOS for a site the rep has not
+   installed, and her handset is the only copy of her book. IndexedDB is not
+   evicted under the same pressure, so every fundi_ key is mirrored there and
+   restored if localStorage is ever found empty when the mirror is not.
+
+   This is a mirror, not a migration. localStorage stays the read path
+   because the whole of state is hydrated synchronously while this file is
+   still parsing, and every loader in the app returns its value rather than a
+   promise. Making those asynchronous is a real refactor of the boot
+   sequence and of forty-odd call sites, and it buys nothing that this buys:
+   the durability is in the copy, not in which API the app reads through.
+
+   Snapshotting on hide rather than intercepting every write keeps this to
+   one function that nothing else has to know about. The exposure is whatever
+   changed since the last snapshot, and the tab being hidden or closed is
+   exactly when eviction happens. */
+var IDB_NAME='fundi_mirror', IDB_STORE='kv';
+function idbOpen(){
+  return new Promise(function(res,rej){
+    if(!self.indexedDB)return rej(new Error('no indexedDB'));
+    var r=indexedDB.open(IDB_NAME,1);
+    r.onupgradeneeded=function(){
+      if(!r.result.objectStoreNames.contains(IDB_STORE))r.result.createObjectStore(IDB_STORE);
+    };
+    r.onsuccess=function(){res(r.result);};
+    r.onerror=function(){rej(r.error);};
+  });
+}
+function fundiKeys(){
+  var out=[];
+  try{for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);if(k&&k.indexOf('fundi_')===0)out.push(k);
+  }}catch(e){}
+  return out;
+}
+function mirrorSave(){
+  var ks=fundiKeys();if(!ks.length)return Promise.resolve(0);
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      var tx=db.transaction(IDB_STORE,'readwrite'), st=tx.objectStore(IDB_STORE);
+      st.clear();
+      ks.forEach(function(k){try{st.put(localStorage.getItem(k),k);}catch(e){}});
+      tx.oncomplete=function(){db.close();res(ks.length);};
+      tx.onerror=function(){db.close();rej(tx.error);};
+    });
+  }).catch(function(){return 0;});
+}
+function mirrorRead(){
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      var tx=db.transaction(IDB_STORE,'readonly'), st=tx.objectStore(IDB_STORE);
+      var out={}, cur=st.openCursor();
+      cur.onsuccess=function(e){
+        var c=e.target.result;
+        if(c){out[c.key]=c.value;c.continue();}else{db.close();res(out);}
+      };
+      cur.onerror=function(){db.close();rej(cur.error);};
+    });
+  }).catch(function(){return {};});
+}
+/* One reload, once, and only when localStorage holds nothing of ours while
+   the mirror does. Restoring without reloading would leave the already-built
+   state object contradicting storage. */
+function mirrorRestoreIfEvicted(){
+  if(fundiKeys().length)return Promise.resolve(false);
+  return mirrorRead().then(function(all){
+    var ks=Object.keys(all);
+    if(!ks.length)return false;
+    /* count what landed rather than what was offered: if storage is
+       refusing writes, every setItem throws into its own catch and a
+       reload would return to precisely this state and try again. */
+    var wrote=0;
+    ks.forEach(function(k){try{localStorage.setItem(k,all[k]);wrote++;}catch(e){}});
+    return wrote>0 && fundiKeys().length>0;
+  }).catch(function(){return false;});
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden')mirrorSave();
+});
+window.addEventListener('pagehide',function(){mirrorSave();});
+/* first snapshot once the app has settled, so a phone that is closed and
+   never reopened still has a copy */
+setTimeout(function(){mirrorSave();},4000);
+mirrorRestoreIfEvicted().then(function(did){if(did)location.reload();});
 /* ---- offline shell ---------------------------------------------------
    Registration is deferred to load so it never competes with first paint,
    and every branch is guarded: a file:// open has no service worker at all
