@@ -5111,6 +5111,17 @@ function ktContents(){
   });
   return out;
 }
+/* Every caller has already set the font it is about to draw in, so this
+   takes the context as it finds it rather than being told a size and a
+   weight and having to agree with the call site about the stack. */
+function ktClip(ctx,str,max){
+  str=(str==null?'':String(str));
+  if(!(max>0))return '';
+  if(ctx.measureText(str).width<=max)return str;
+  while(str.length>1&&ctx.measureText(str+'\u2026').width>max)str=str.slice(0,-1);
+  return str+'\u2026';
+}
+function ktHasAvatar(){return !!(state.biz&&state.biz.avatar);}
 function drawKtToc(ctx){
   ctx.fillStyle='#F6F8FB';ctx.fillRect(0,0,1080,1350);
   var stops=MS_GRADS[(state.biz&&state.biz.cardStyle)||'classic']||MS_GRADS.classic;
@@ -5124,14 +5135,17 @@ function drawKtToc(ctx){
   ctx.strokeStyle='#DFE6EF';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(M,y);ctx.lineTo(1080-M,y);ctx.stroke();y+=64;
   ktContents().forEach(function(r){
-    ctx.fillStyle='#101A28';ctx.font='700 34px system-ui,Segoe UI,Roboto,sans-serif';
-    ctx.textAlign='left';ctx.fillText(r.cat,M,y);
-    ctx.fillStyle='#5A6472';ctx.font='600 26px system-ui,Segoe UI,Roboto,sans-serif';
-    ctx.fillText(t('ktTocItems').replace('{n}',r.n),M,y+34);
+    /* the page reference first, so the category knows what is left */
     ctx.textAlign='right';
     ctx.fillStyle='#2FA6C8';ctx.font='800 32px system-ui,Segoe UI,Roboto,sans-serif';
-    ctx.fillText(r.from===r.to?t('ktTocPage').replace('{a}',r.from)
-      :t('ktTocPages').replace('{a}',r.from).replace('{b}',r.to),1080-M,y);
+    var pg=r.from===r.to?t('ktTocPage').replace('{a}',r.from)
+      :t('ktTocPages').replace('{a}',r.from).replace('{b}',r.to);
+    ctx.fillText(pg,1080-M,y);
+    var room=(1080-M)-ctx.measureText(pg).width-40-M;
+    ctx.fillStyle='#101A28';ctx.font='700 34px system-ui,Segoe UI,Roboto,sans-serif';
+    ctx.textAlign='left';ctx.fillText(ktClip(ctx,r.cat,room),M,y);
+    ctx.fillStyle='#5A6472';ctx.font='600 26px system-ui,Segoe UI,Roboto,sans-serif';
+    ctx.fillText(t('ktTocItems').replace('{n}',r.n),M,y+34);
     ctx.textAlign='left';
     ctx.strokeStyle='#E8EDF4';ctx.lineWidth=1.5;
     ctx.beginPath();ctx.moveTo(M,y+56);ctx.lineTo(1080-M,y+56);ctx.stroke();
@@ -5255,14 +5269,15 @@ function drawKtCover(ctx){
   ctx.font='italic 700 50px Georgia,serif';ctx.fillStyle='#7FD8EA';ctx.fillText(t('hardware'),340,208);
   ctx.textAlign='center';
   /* the business is the client: its name is the cover, not a caption under it */
-  var bn=((state.biz&&state.biz.name)||'').toUpperCase(), by=560, bsz=72;
+  var base=ktHasAvatar()?560:466;
+  var bn=((state.biz&&state.biz.name)||'').toUpperCase(), by=base, bsz=72;
   ctx.font='900 '+bsz+'px system-ui,Segoe UI,Roboto,sans-serif';
   var bw=bn.split(' '),bl='',blines=[];
   bw.forEach(function(w){var tst=bl?bl+' '+w:w;
     if(ctx.measureText(tst).width>930){blines.push(bl);bl=w;}else bl=tst;});
   if(bl)blines.push(bl);
   while(blines.length>3&&bsz>44){bsz-=6;ctx.font='900 '+bsz+'px system-ui,Segoe UI,Roboto,sans-serif';}
-  by=560-(blines.length-1)*38;
+  by=base-(blines.length-1)*38;
   blines.slice(0,3).forEach(function(l){
     ctx.fillStyle='#FFFFFF';ctx.font='900 '+bsz+'px system-ui,Segoe UI,Roboto,sans-serif';
     ctx.fillText(l,540,by);by+=bsz+8;});
@@ -5273,7 +5288,7 @@ function drawKtCover(ctx){
   ctx.fillText(t('ktCoverItems').replace('{n}',ktItems().length),540,by+136);
   /* who sent it */
   ctx.fillStyle='#FFFFFF';ctx.font='800 46px system-ui,Segoe UI,Roboto,sans-serif';
-  ctx.fillText(repName()||'',540,930);
+  ctx.fillText(ktClip(ctx,repName()||'',936),540,930);
   var rp=((state.biz&&state.biz.repMobile)||'').trim()||((state.biz&&state.biz.phone)||'');
   if(rp){ctx.fillStyle='rgba(255,255,255,.82)';ctx.font='700 38px system-ui,Segoe UI,Roboto,sans-serif';
     ctx.fillText(rp,540,984);}
@@ -5296,9 +5311,7 @@ function drawKtAvatarThen(ctx,done){
     ctx.drawImage(img,436,276,208,208);ctx.restore();
     ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=6;
     ctx.beginPath();ctx.arc(540,380,104,0,7);ctx.stroke();done();};img.src=av;}
-  else{ctx.fillStyle='rgba(255,255,255,.16)';ctx.beginPath();ctx.arc(540,380,104,0,7);ctx.fill();
-    ctx.fillStyle='#FFFFFF';ctx.textAlign='center';ctx.font='900 100px system-ui,Segoe UI,Roboto,sans-serif';
-    ctx.fillText(((state.rep||'R')[0]||'R').toUpperCase(),540,418);done();}
+  else done();
 }
 function drawKtPage(ctx,items,pageNo,pages,catLabel){
   ctx.fillStyle='#F6F8FB';ctx.fillRect(0,0,1080,1350);
@@ -5312,17 +5325,19 @@ function drawKtPage(ctx,items,pageNo,pages,catLabel){
   var y=230;
   items.forEach(function(p,i){
     if(i%2===0){ctx.fillStyle='#FFFFFF';ctx.fillRect(40,y-44,1000,64);}
-    ctx.textAlign='left';ctx.fillStyle='#1B2733';
-    ctx.font='600 34px system-ui,Segoe UI,Roboto,sans-serif';
-    var nm=p.name+(p.size?' \u00b7 '+p.size:'');
-    if(nm.length>38)nm=nm.slice(0,37)+'\u2026';
-    ctx.fillText(nm,60,y);
+    ctx.fillStyle='#1B2733';
+    /* the price is right-aligned and set heavier, so the room the name has
+       is whatever the price beside it did not take. Draw it first and
+       measure it, rather than guessing at a character count. */
     ctx.textAlign='right';ctx.font='800 34px system-ui,Segoe UI,Roboto,sans-serif';
-    ctx.fillText(fmt(p.price),1020,y);
+    var pr=fmt(p.price);ctx.fillText(pr,1020,y);
+    var room=1020-ctx.measureText(pr).width-40-60;
+    ctx.textAlign='left';ctx.font='600 34px system-ui,Segoe UI,Roboto,sans-serif';
+    ctx.fillText(ktClip(ctx,p.name+(p.size?' \u00b7 '+p.size:''),room),60,y);
     y+=64;
   });
   ctx.fillStyle='#5C6B7A';ctx.textAlign='center';ctx.font='600 28px system-ui,Segoe UI,Roboto,sans-serif';
-  ctx.fillText((state.rep||'')+'  \u00b7  '+((state.biz&&state.biz.phone)||'')+'  \u00b7  '+t('ktFoot').replace('{d}',ktToday()),540,1300);
+  ctx.fillText(ktClip(ctx,(state.rep||'')+'  \u00b7  '+((state.biz&&state.biz.phone)||'')+'  \u00b7  '+t('ktFoot').replace('{d}',ktToday()),1000),540,1300);
 }
 function buildKtPages(done){
   var cv=document.getElementById('ktCanvas'),ctx=cv.getContext('2d');
