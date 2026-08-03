@@ -2286,7 +2286,13 @@ function loadCustomers(){
   }catch(e){}
   /* No stored customers. Seed only in demo mode; a real install starts empty. */
   if(!DEMO_MODE)return [];
-  return DEFAULT_CUSTOMERS.map(function(c){var o={...c};o.demo=1;return o;});
+  return seedPersist('fundi_customers',
+    DEFAULT_CUSTOMERS.map(function(c){var o={...c};o.demo=1;return o;}));
+}
+function seedPersist(key,rows){
+  if(!rows||!rows.length)return rows;
+  try{lsSet(key,JSON.stringify(rows));}catch(e){}
+  return rows;
 }
 function saveCustomers(){lsSet('fundi_customers',JSON.stringify(state.customers));}
 const CUSTOMERS=loadCustomers();
@@ -2523,8 +2529,7 @@ function loadOrders(){
   seed.forEach(function(o){if(!o.total)stampVat(o);});
   seedPayments(seed);
   /* written once, here, so the next cold start reads rather than rebuilds */
-  if(seed.length){try{lsSet('fundi_orders',JSON.stringify(seed));}catch(e){}}
-  return seed;
+  return seedPersist('fundi_orders',seed);
 }
 function saveOrders(){lsSet('fundi_orders',JSON.stringify(state.orders));}
 function wkey(){const d=new Date();return 'fundi_wins_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
@@ -2599,7 +2604,8 @@ function loadQuotes(){
   var a=lsJSON('fundi_quotes2');
   if(Array.isArray(a))return a;                    /* stored quotes win outright */
   if(!DEMO_MODE)return [];
-  return seedQuotes().concat(backfillQuotes());    /* seed path only: backfill never re-runs */
+  return seedPersist('fundi_quotes2',
+    seedQuotes().concat(backfillQuotes()));       /* seed path only: backfill never re-runs */
 }
 function saveQuotes(){lsSet('fundi_quotes2',JSON.stringify(state.quotes));}
 state.customers=CUSTOMERS; state.prospects=loadProspects(); state.ktRound=loadKtRound(); state.ktRounds=loadKtRounds(); state.custView='c'; state.manualDone=loadManualTasks(); state.stock=loadStock(); state.expandedOrder=null; state.expandedFu=null; state.delivOpen=false; state.expandedDeliv=null; state.dark=!!localStorage.getItem('fundi_dark');applyDark(); state.orders=loadOrders(); state.orders.forEach(o=>{if(!o.total)o.total=itemsTotal(o.items);}); demoOrdersInit(); state.wins=loadWins(); state.quotes=loadQuotes(); reconcileQuotes();
