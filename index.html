@@ -825,7 +825,13 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
    wrong is worse than one that is small and right.
    .add is the + on a catalogue row: 40px inside a 66px row with 13px clear on
    every side, and the row itself is not clickable, so the extra 2px per side
-   takes a tap from nothing. 148 of them, the largest single group. */
+   takes a tap from nothing. 148 of them, the largest single group.
+   .ord-head and .rp-hbar are the same case, measured the same way: both 40px,
+   both 4px short. The order head has 13.7px clear above and 19.7 below inside
+   its own 73px card; the report bar has an 11px gap to the next bar and 10px
+   to the .rc-title above it. Neither holds anything else that takes a tap, so
+   2px per side collides with nothing. .rc-title itself stays out — it is 30px
+   and the 14px it needs is more than the 10px gap it has. */
 /* The EN/SW pair used to round its corners by clipping its children, which
    clipped the hit areas below with them -- the buttons measured 44px and
    still took a tap only on the visible 26. The children carry the rounding
@@ -833,8 +839,10 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
    Keep these two in step with .set-toggle-pair's radius if it ever changes. */
 .set-lang:first-child{border-radius:7.5px 0 0 7.5px}
 .set-lang:last-child{border-radius:0 7.5px 7.5px 0}
-.sl-paid,.sl-owed,.demo-tip-x,.mc-eye,.set-lang,.set-dark-toggle,.info-i,.add,.hbgr{position:relative}
+.sl-paid,.sl-owed,.demo-tip-x,.mc-eye,.set-lang,.set-dark-toggle,.info-i,.add,.hbgr,
+.ord-head,.rp-hbar{position:relative}
 .sl-paid::before,.sl-owed::before,.demo-tip-x::before,.info-i::before,.add::before,.hbgr::before,
+.ord-head::before,.rp-hbar::before,
 .mc-eye::before,.set-lang::before,.set-dark-toggle::before{
   content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   width:100%;height:100%;min-width:44px;min-height:44px}
