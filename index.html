@@ -1498,7 +1498,7 @@ select::-ms-expand{display:none}
           </div>
         </div>
         <button class="btn set-reset" onclick="resetDemoData()" id="setResetBtn">Reset demo data</button>
-        <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--soft)" id="buildStamp">Fundi Sales v1.4 · 2 Aug 2026 · demo build</div>
+        <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--soft)" id="buildStamp">Fundi Sales v1.5 · 7 Aug 2026 · demo build</div>
       </div>
     </div>
   </div>
@@ -3042,7 +3042,14 @@ function undoLastOrder(){const s=state.lastUndo;if(!s)return;state.lastUndo=null
   Object.keys(s.stock).forEach(id=>{state.stock[id]=s.stock[id];});saveStock();
   state.wins=s.wins;lsSet(wkey(),state.wins);
   toast(t('undone'));renderHome();renderList();if(state.screen==='orders')renderOrders();}
-function deliveryGroups(){const g={};state.orders.forEach(o=>{const a=o.area||'Other';if(!g[a])g[a]=[];g[a].push(o);});return g;}
+/* A delivery run is what still needs delivering. This grouped every order
+   ever written, so the route the driver got on WhatsApp listed 51 stops while
+   the card in front of the rep showed 4 — 47 of them already delivered, sent
+   as a day's driving across Dar es Salaam. renderDeliveryCard grouped
+   pendingDeliveries() itself with the same four lines, which is how the two
+   drifted; it calls this now, so the card she reads and the message he gets
+   cannot give different answers to the same question. */
+function deliveryGroups(){const g={};pendingDeliveries().forEach(o=>{const a=o.area||'Other';if(!g[a])g[a]=[];g[a].push(o);});return g;}
 function buildDriverMsg(){let s='',i=1;const g=deliveryGroups();for(const a in g){g[a].forEach(o=>{const dl=o.delivSchedule?(' ['+swDelivDateLabel(o.delivSchedule)+']'):'';s+=i+'. '+o.custName+' ('+a+') — TSh '+fmt(o.total)+dl+'\n';i++;});}return sw('delivdrivermsg').replace('{stops}',s.trim());}
 function sendDriverWA(){shareText(buildDriverMsg());}
 function sendCustDelivery(oid){const o=state.orders.find(x=>x.id===oid);if(!o)return;const first=(o.person||o.custName).split(' ')[0];const msg=sw('delivcustmsg').replace('{name}',first).replace('{total}',fmt(o.total)).replace('{area}',o.area||'');window.open('https://wa.me/'+(o.phone||'')+'?text='+encodeURIComponent(msg),'_blank');}
@@ -3149,7 +3156,7 @@ function calcSendDriver(){
   sendDriverWA();
 }
 function renderDeliveryCard(){
-const orders=pendingDeliveries();if(!orders.length)return '';const g={};orders.forEach(o=>{const a=o.area||'Other';if(!g[a])g[a]=[];g[a].push(o);});
+const orders=pendingDeliveries();if(!orders.length)return '';const g=deliveryGroups();
 const na=Object.keys(g).length,no=orders.length;
 const rows=Object.entries(g).map(([area,ords])=>`<div class="deliv-area"><span class="deliv-aname">${area}</span>${ords.map(o=>{
   const open=state.expandedDeliv===o.id;
@@ -10165,7 +10172,6 @@ function todayDeliveries(){const today=todayISO();return state.orders.filter(o=>
 function openDelivSheet(){
   state.delivOpen=true;
   document.getElementById('delivShTitle').textContent=t('deliverytitle');
-  const g=deliveryGroups();
   document.getElementById('delivShSub').textContent='';
   const card=renderDeliveryCard();
   document.getElementById('delivShBody').innerHTML=card?card.replace('onclick="toggleDeliv()"',''):`<div class="empty">${t('delivNone')}</div>`;
