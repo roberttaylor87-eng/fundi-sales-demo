@@ -795,6 +795,10 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
    at seven call sites that would drift apart again.
    Timeline rows are deliberately NOT included: .th-row aligns to flex-start
    so the icon tracks the first line of a two-line row, which is right. */
+/* Caption under the hero's right-hand numeral. Only the explore hero uses it;
+   the won-analysis hero puts a count there, which needs no gloss. */
+.qa-hero-cap{display:block;font-size:10px;font-weight:700;color:var(--soft);
+  letter-spacing:.2px;margin-top:1px;text-align:right;white-space:nowrap}
 .rc-hd-t{display:inline-flex;align-items:center;gap:7px;min-width:0}
 .rc-hd-t svg{flex:none}
 /* The "i" beside a control whose meaning cannot be inferred from its label.
@@ -4657,7 +4661,10 @@ function renderExplore(){
   html+='<div class="qa-hero qa-hero-g"><div class="qa-hero-left">'
     +'<div class="qa-hero-v">'+fmtTSh(res.total)+'</div>'
     +'<div class="qa-hero-l">'+t('expSales').replace('{n}',res.count)+' \u00b7 '+t('expAvg').replace('{v}',fmt(res.avg))+'</div>'
-    +'</div><div class="qa-hero-n">'+(qs.winRate==null?'\u2014':qs.winRate+'%')+'</div></div>';
+    /* Same unlabelled percentage as the exported document had. The numeral
+       stays 26px; the caption underneath says what it counts. */
+    +'</div><div class="qa-hero-n">'+(qs.winRate==null?'\u2014':qs.winRate+'%')
+    +'<span class="qa-hero-cap">'+t('custWinRate').toLowerCase()+'</span></div></div>';
   /* every breakdown row narrows the filter further */
   function group(title,key,patchOf){
     var rows=DATA.groupBy(res,key);if(!rows.length)return '';
@@ -6752,7 +6759,10 @@ function buildExplorePages(cb){
       rpKpi(ctx,RP.M,y,cw,152,t('expTotal'),'TSh '+fmtM(res.total),'');
       rpKpi(ctx,RP.M+cw+16,y,cw,152,t('repNOrders').replace('{n}',''),String(res.count),'');
       rpKpi(ctx,RP.M+(cw+16)*2,y,cw,152,t('statAvg'),'TSh '+fmt(res.avg),
-        q.winRate==null?'':q.winRate+'%');
+        /* A bare "50%" under an Avg order tile read as a share of something on
+           this page. It is the quote win rate, so it says so, in the wording
+           the won-quotes screen already uses. */
+        q.winRate==null?'':q.winRate+'% '+t('custWinRate').toLowerCase());
       y+=188;
     }
     var card=rpCard(ctx,RP.M,y,RP.W-RP.M*2,RP.H-y-150,t('expTx'));
@@ -6762,7 +6772,15 @@ function buildExplorePages(cb){
       var ry=card+16, iw=RP.W-RP.M*2-56;
       slice.forEach(function(o){
         ctx.font=RP.f(20,800);
-        var amt='TSh '+fmt(o.total||0), aw=ctx.measureText(amt).width;
+        /* The slice, not the whole order. This card is headed "the orders
+           behind it" under a TOTAL that is the category's share, and it drew
+           each order's full value instead: a category total of 857,076 above
+           two rows reading 1,073,363 and 471,528. Both figures were right and
+           they answered different questions, with nothing on the page saying
+           so. res.valueOf narrows to the filtered lines exactly as the TOTAL
+           does, so the rows now sum to the number above them -- and match the
+           on-screen list, which was never wrong. */
+        var amt='TSh '+fmt(res.valueOf(o)||0), aw=ctx.measureText(amt).width;
         rpTx(ctx,rpClip(ctx,o.custName||'',iw-aw-28,20,700),RP.M+28,ry,20,700,RP.ink);
         rpTx(ctx,amt,RP.M+28+iw,ry,20,800,RP.ink,'right');
         rpTx(ctx,dLocal(new Date(o.date),{day:'numeric',month:'short',year:'numeric'}),
