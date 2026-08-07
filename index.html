@@ -7007,6 +7007,13 @@ function buildReportPages(cb){
       top3Pct:Math.round(cs.slice(0,3).reduce(function(a,c){return a+c.total;},0)/res.total*100)};
   })();
   var out=[], TOTAL=7;
+  /* The gap between stacked cards. Every advance used to be written as the
+     card's height plus this, already added up -- 500 and 536, 470 and 506 --
+     so the height appeared twice and the two had to agree by hand. A card
+     resized without its advance overlaps the next one, and on a canvas
+     nothing complains: it simply draws over it. Heights are named once now
+     and the advance is height + RP_GAP. */
+  var RP_GAP=36;
 
   /* ---- page 1: cover ----
      White. An owner prints this; a full-bleed gradient costs ink and turns
@@ -7135,18 +7142,20 @@ function buildReportPages(cb){
     if(!d)return '\u2014';
     return (d>0?'\u2191 ':'\u2193 ')+Math.abs(d)+'%';
   }
-  rpKpi(ctx,RP.M,y,cw,152,t('rpTotalSales'),'TSh '+fmtM(res.total),
+  var kpiH=152;
+  rpKpi(ctx,RP.M,y,cw,kpiH,t('rpTotalSales'),'TSh '+fmtM(res.total),
     prev?delta(res.total,prev.total)+' '+t('rpVsPriorShort').replace('{v}','TSh '+fmtM(prev.total)):t('rpNoPrior'));
-  rpKpi(ctx,RP.M+cw+16,y,cw,152,t('statAvg'),'TSh '+fmt(res.avg),
+  rpKpi(ctx,RP.M+cw+16,y,cw,kpiH,t('statAvg'),'TSh '+fmt(res.avg),
     prev?delta(res.avg,prev.avg):t('rpNoPrior'));
-  rpKpi(ctx,RP.M+(cw+16)*2,y,cw,152,t('statWon'),(q.winRate==null?'\u2014':q.winRate+'%'),
+  rpKpi(ctx,RP.M+(cw+16)*2,y,cw,kpiH,t('statWon'),(q.winRate==null?'\u2014':q.winRate+'%'),
     q.all.length?(q.won.length+' / '+q.decided):t('rpEmpty'));
-  y+=188;
+  y+=kpiH+RP_GAP;
   /* D6: discrete orders drawn as bars, with the bucket size stated so the
      reader is not left inferring it. D5: equal buckets reaching the period end. */
   var MB=rpMonths(res,per.from,per.to);
   var trendTitle=(state.rpPeriod==='all')?t('repSalesAll'):t('repSalesRange').replace('{r}',per.label);
-  var top=rpCard(ctx,RP.M,y,RP.W-RP.M*2,500,trendTitle);
+  var trendH=500;
+  var top=rpCard(ctx,RP.M,y,RP.W-RP.M*2,trendH,trendTitle);
   if(!res.count||!MB.length){ rpEmpty(ctx,RP.M+28,top,RP.W-RP.M*2-56); }
   else{
     /* if a range is short enough to hold no whole month, equal buckets
@@ -7165,7 +7174,7 @@ function buildReportPages(cb){
         shown.map(function(b,i){return monthLabel(b,i?shown[i-1]:null);}));
     }
   }
-  y+=536;
+  y+=trendH+RP_GAP;
   var pipeTop=rpCard(ctx,RP.M,y,RP.W-RP.M*2,420,t('rpPipeline'));
   /* C4: no quotes means a sentence, not a donut of zeros */
   if(!q.all.length){ rpEmpty(ctx,RP.M+28,pipeTop,RP.W-RP.M*2-56,t('rpNoQuotes')); }
@@ -7181,8 +7190,11 @@ function buildReportPages(cb){
   /* ---- page 3: customers ---- */
   y=rpPageFrame(ctx,t('rpP3Title'),per.label,3,TOTAL);
   var allCust=DATA.groupBy(res,'customer'), custs=allCust.slice(0,10);
-  /* 78 title + 22 sub + rows*52 + 28 pad. Was 620 against 542 of content. */
-  var c1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,78+22+custs.length*52+28,t('rpTopCust'));
+  /* 78 title + 22 sub + rows*52 + 28 pad. Was 620 against 542 of content.
+     Written once and used twice, because the same expression appearing in the
+     card and again in the advance is two things that have to agree by hand. */
+  var custH=78+22+custs.length*52+28;
+  var c1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,custH,t('rpTopCust'));
   if(!allCust.length){ rpEmpty(ctx,RP.M+28,c1,RP.W-RP.M*2-56); }
   else{
     /* H3: say how many were left out and how much of the total is shown */
@@ -7193,7 +7205,7 @@ function buildReportPages(cb){
        ten and would have dropped the tenth silently. */
     rpBars(ctx,RP.M+28,c1+22,RP.W-RP.M*2-56,custs.length*52,custs.map(function(d){return {k:d.key,v:d.total};}));
   }
-  y+=78+22+custs.length*52+28+16;      /* the card's own height, plus the gap */
+  y+=custH+16;                         /* the card's own height, plus the gap */
   var allAreas=DATA.groupBy(res,'area'), areas=allAreas.slice(0,6);
   var c2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,480,t('rpByArea'));
   if(!allAreas.length){ rpEmpty(ctx,RP.M+28,c2,RP.W-RP.M*2-56); }
@@ -7208,13 +7220,14 @@ function buildReportPages(cb){
   /* ---- page 4: products and categories ---- */
   y=rpPageFrame(ctx,t('rpP4Title'),per.label,4,TOTAL);
   var allCats=DATA.groupBy(res,'category'), cats=allCats.slice(0,6);
-  var d1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,450,t('rpByCat'));
+  var catH=450;
+  var d1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,catH,t('rpByCat'));
   if(!allCats.length){ rpEmpty(ctx,RP.M+28,d1,RP.W-RP.M*2-56); }
   else{
     rpDonut(ctx,RP.M+28,d1,RP.W-RP.M*2-56,340,
       cats.map(function(d){return {k:d.key,v:d.total};}),res.total);
   }
-  y+=486;
+  y+=catH+RP_GAP;
   var allProds=DATA.groupBy(res,'product'), prods=allProds.slice(0,10);
   var d2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,78+22+prods.length*52+28,t('rpTopProd'));
   if(!allProds.length){ rpEmpty(ctx,RP.M+28,d2,RP.W-RP.M*2-56); }
@@ -7230,7 +7243,8 @@ function buildReportPages(cb){
   y=rpPageFrame(ctx,t('rpP5Title'),per.label,5,TOTAL);
   var col=rpCollections(per.from,per.to);
   var collTotal=col.cash+col.mobile;
-  var e1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,260,t('collByMethod'));
+  var methH=260;
+  var e1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,methH,t('collByMethod'));
   if(!collTotal){ rpEmpty(ctx,RP.M+28,e1,RP.W-RP.M*2-56); }
   else{
     /* D4: two segments are a bar, not a donut and a legend and a fifth of a page */
@@ -7238,8 +7252,9 @@ function buildReportPages(cb){
       {k:t('payViaCash'),v:col.cash,c:RP.ser[0]},
       {k:t('payViaMobile'),v:col.mobile,c:RP.ser[4]}],collTotal);
   }
-  y+=296;
-  var e2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,470,t('collByProvider'));
+  y+=methH+RP_GAP;
+  var provH=470;
+  var e2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,provH,t('collByProvider'));
   if(!col.byProvider.length){ rpEmpty(ctx,RP.M+28,e2,RP.W-RP.M*2-56); }
   else{
     var pUsed=rpBars(ctx,RP.M+28,e2,RP.W-RP.M*2-56,330,col.byProvider.slice(0,6));
@@ -7250,7 +7265,7 @@ function buildReportPages(cb){
     rpTx(ctx,t('rpMobileSub'),RP.M+28,sy+38,20,700,RP.ink);
     rpTx(ctx,'TSh '+fmt(col.mobile),RP.W-RP.M-28,sy+38,20,800,RP.ink,'right');
   }
-  y+=506;
+  y+=provH+RP_GAP;
   var AG=rpAged(res);
   /* 78 + 22 note + 4*52 bars + 14 + 44 total row + 28. Was 318 against 394. */
   var g1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,394,t('rpAgedTitle'));
@@ -7271,7 +7286,8 @@ function buildReportPages(cb){
   /* ---- page 6: customers in this period ---- */
   y=rpPageFrame(ctx,t('rpP6Title'),per.label,6,TOTAL);
   var NR=rpNewReturning(res,per.from);
-  var f1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,300,t('rpNewRetTitle'));
+  var newRetH=300;
+  var f1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,newRetH,t('rpNewRetTitle'));
   if(!NR){ rpEmpty(ctx,RP.M+28,f1,RP.W-RP.M*2-56,t('rpNewRetAll')); }
   else if(!res.count){ rpEmpty(ctx,RP.M+28,f1,RP.W-RP.M*2-56); }
   else{
@@ -7280,13 +7296,27 @@ function buildReportPages(cb){
     rpKpi(ctx,RP.M+28+hw+16,f1,hw,152,t('rpRetC'),String(NR.retN),'TSh '+fmtM(NR.retV));
     rpTx(ctx,t('rpNewRetNote'),RP.M+28,f1+186,18,600,RP.soft);
   }
-  y+=336;
+  y+=newRetH+RP_GAP;
   var LP=rpLapsed();
-  var f2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,660,t('rpLapsedTitle'));
+  /* The card was a flat 660 while the list sliced at 9, and 660 holds seven.
+     Nine rows plus the "+N more" line drew 78px below the card's own border,
+     outside the rounded edge, on the one document that goes to prospective
+     customers. It was invisible on the day it was written because the seed
+     happened to produce four lapsed customers; the seed is date-relative, so
+     this arrives and leaves on its own and no fixed-date test would hold it.
+     The height comes from the rows now, and the row count from what the page
+     has left, so neither can outrun the other. */
+  var LAP_ROW=66, LAP_CHROME=158;            /* title, note and bottom padding */
+  var LAP_MORE=34;                           /* the "+N more" line, when drawn */
+  var lapFit=Math.floor(((RP.H-96)-y-LAP_CHROME-LAP_MORE)/LAP_ROW);
+  var shownL=LP.slice(0,Math.max(1,Math.min(9,lapFit)));
+  var lapMore=LP.length>shownL.length;
+  var f2h=LP.length?(LAP_CHROME+shownL.length*LAP_ROW+(lapMore?LAP_MORE:0)):300;
+  var f2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,f2h,t('rpLapsedTitle'));
   if(!LP.length){ rpEmpty(ctx,RP.M+28,f2,RP.W-RP.M*2-56,t('rpLapsedNone')); }
   else{
     rpTx(ctx,t('rpLapsedNote'),RP.M+28,f2+4,18,600,RP.soft);
-    var ly=f2+52, lw=RP.W-RP.M*2-56, shownL=LP.slice(0,9);
+    var ly=f2+52, lw=RP.W-RP.M*2-56;
     shownL.forEach(function(r){
       ctx.font=RP.f(21,700);
       var amt='TSh '+fmt(r.v), aw=ctx.measureText(amt).width;
@@ -7306,7 +7336,8 @@ function buildReportPages(cb){
   /* ---- page 7: discounting and tax ---- */
   y=rpPageFrame(ctx,t('rpP7Title'),per.label,7,TOTAL);
   var DS=rpDiscounting(res), VS=rpVatSummary(res), iw=RP.W-RP.M*2-56;
-  var h1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,300,t('rpDiscTitle'));
+  var discH=300;
+  var h1=rpCard(ctx,RP.M,y,RP.W-RP.M*2,discH,t('rpDiscTitle'));
   if(!res.count){ rpEmpty(ctx,RP.M+28,h1,iw); }
   else{
     var dy=h1+18;
@@ -7315,8 +7346,9 @@ function buildReportPages(cb){
     dy+=rpMoneyRow(ctx,RP.M+28,dy,iw,t('rpDiscGiven'),'TSh '+fmt(DS.given),true);
     rpTx(ctx,t('rpDiscPct').replace('{p}',DS.pct.toFixed(1)),RP.M+28,dy+14,19,600,RP.soft);
   }
-  y+=336;
-  var h2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,318,t('rpVatTitle'));
+  y+=discH+RP_GAP;
+  var vatH=318;
+  var h2=rpCard(ctx,RP.M,y,RP.W-RP.M*2,vatH,t('rpVatTitle'));
   if(!VS.cfg.on){ rpEmpty(ctx,RP.M+28,h2,iw,t('rpVatOff')); }
   else if(!res.count){ rpEmpty(ctx,RP.M+28,h2,iw); }
   else{
@@ -7328,7 +7360,7 @@ function buildReportPages(cb){
     rpTx(ctx,VS.tin?t('rpTinLine').replace('{n}',VS.tin):t('rpTinNone'),
       RP.M+28,vy+14,19,600,RP.soft);
   }
-  y+=354;
+  y+=vatH+RP_GAP;
   /* Said on the document rather than left as a gap the reader has to
      notice: margin needs cost prices and this app has never held one. */
   var h3=rpCard(ctx,RP.M,y,RP.W-RP.M*2,190,t('rpMarginTitle'));
