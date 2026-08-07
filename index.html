@@ -6854,7 +6854,24 @@ function buildExplorePages(cb){
   var title=state.exploreLabel||t('expTitle');
   var scope=state.explorePin||exploreScopeText(f);
   var rows=exploreSort(res.rows,f,res.valueOf);
-  var PER=18, pages=Math.max(1,Math.ceil(rows.length/PER)), out=[];
+  /* PER was a flat 18 and the card was drawn at RP.H-y-150, so neither the
+     rows nor the box they sit in came from the content.
+     Page one carries the KPI band, which eats 188px: eighteen rows at 62
+     need 1116 against 922 available, so the last four were drawn past the
+     bottom of the sheet. And with a single transaction the card still filled
+     the page -- one row of content above an expanse of white, which is what
+     the layout note on the drill-down was about.
+     Capacity per page type now, and the card takes its height from the rows
+     it actually holds. */
+  var EX_ROW=62, EX_TITLE=78, EX_PAD=16, EX_TAIL=14, EX_FOOT=150, EX_KPI=188;
+  function exRowsPerPage(first){
+    var top=190+(first?EX_KPI:0);
+    return Math.max(1,Math.floor((RP.H-top-EX_FOOT-EX_TITLE-EX_PAD-EX_TAIL)/EX_ROW));
+  }
+  var plan=[],left=rows.length,firstPage=true;
+  while(left>0){var take=Math.min(exRowsPerPage(firstPage),left);plan.push(take);left-=take;firstPage=false;}
+  if(!plan.length)plan=[0];
+  var pages=plan.length, taken=0, out=[];
   for(var p=0;p<pages;p++){
     var y=rpPageFrame(ctx,title,scope,p+1,pages);
     if(p===0){
@@ -6868,8 +6885,10 @@ function buildExplorePages(cb){
         q.winRate==null?'':q.winRate+'% '+t('custWinRate').toLowerCase());
       y+=188;
     }
-    var card=rpCard(ctx,RP.M,y,RP.W-RP.M*2,RP.H-y-150,t('expTx'));
-    var slice=rows.slice(p*PER,(p+1)*PER);
+    var n=plan[p];
+    var card=rpCard(ctx,RP.M,y,RP.W-RP.M*2,
+      EX_TITLE+EX_PAD+Math.max(1,n)*EX_ROW+EX_TAIL,t('expTx'));
+    var slice=rows.slice(taken,taken+n); taken+=n;
     if(!slice.length){rpEmpty(ctx,RP.M+28,card,RP.W-RP.M*2-56);}
     else{
       var ry=card+16, iw=RP.W-RP.M*2-56;
