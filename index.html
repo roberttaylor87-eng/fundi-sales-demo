@@ -795,6 +795,16 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
    at seven call sites that would drift apart again.
    Timeline rows are deliberately NOT included: .th-row aligns to flex-start
    so the icon tracks the first line of a two-line row, which is right. */
+/* The printed documents' mark. The canvas family got one when branding became
+   policy; the HTML family -- quote, invoice, pro-forma -- had a line of text on
+   the quote and nothing at all on the other two. Typography rather than an
+   image, so it costs no bytes, scales with --fd like everything else in the
+   document, and survives a greyscale printer. */
+.fbrand{display:flex;align-items:baseline;gap:.34em;margin-top:1em;
+  padding-top:.7em;border-top:1px solid #e6e6e6}
+.fb-mark{font-weight:900;font-size:1.06em;letter-spacing:.02em;color:#2563EB}
+.fb-sub{font-weight:600;font-size:.86em;color:#5A6472}
+.fb-txt{margin-left:auto;font-size:.8em;color:#5A6472;text-align:right}
 /* Caption under the hero's right-hand numeral. Only the explore hero uses it;
    the won-analysis hero puts a count there, which needs no gloss. */
 .qa-hero-cap{display:block;font-size:10px;font-weight:700;color:var(--soft);
@@ -4168,7 +4178,7 @@ function openFormal(keepRef){
     <table><thead><tr><th>#</th><th>${t('thitem')}</th><th class="r">${t('thqty')}</th><th class="r">${t('thunit')}</th><th class="r">${t('thamt')}</th></tr></thead>
     <tbody>${rows}</tbody><tfoot>${docTotalsRows(x.sum,x.disc,x.pct,x.vat,x.vatRate,x.grand,x.ovLines>0?t('discScope').replace('{a}',x.discLines).replace('{b}',x.lines):'')}</tfoot></table>
     <div class="fnote">${t('fnoteCur')}<br>${t('fnoteValid').replace('{n}',plural(quoteValidDays(),'fvDay','fvDays'))}</div>
-    <div class="fgen">${t('fnote2')}</div>`;
+    ${docBrandBlock()}`;
   state.formalKind='quote';
   show2('formal');}
 function rebuildFormal(){
@@ -6518,6 +6528,14 @@ function rpSetRef(r){_rpRef=r||'';}
    it off must never change layout anywhere else -- the mark reserves its own
    width and the strings beside it measure against what is left. */
 function brandOn(){return !(state.biz&&state.biz.brandOff===true);}
+/* The HTML documents' equivalent of drawFundiMark. Same switch, so white-label
+   removal stays one predicate across both rendering families. */
+function docBrandBlock(){
+  if(!brandOn())return '';
+  return '<div class="fbrand"><span class="fb-mark">FUNDI</span>'
+    +'<span class="fb-sub">Sales</span>'
+    +'<span class="fb-txt">'+t('fnote2')+'</span></div>';
+}
 /* Drawn rather than loaded: an <img> would be async inside a synchronous page
    build, and every document is composed in one pass. Returns the width used
    so callers can lay out beside it. */
@@ -9741,7 +9759,8 @@ function openInvoice(oid){const o=findOrderById(oid);if(!o)return;
     <div class="fgen">${t('fnoteCur')}<br>${
       kind==='proforma' ? t('invNotTax')
       : (canIssueTaxReceipt() ? t('taxReceiptNote') : t('paymentRecordNote'))
-    }<br>${t('docGenBy')}</div>`;
+    }<br>${t('docGenBy')}</div>
+    ${docBrandBlock()}`;
   show2('formal');}
 function delivDateLabel(d){if(!d)return t('unscheduled');const today=todayISO();const tom=isoPlusDays(1);if(d===today)return t('schedToday');if(d===tom)return t('schedTomorrow');return t('schedFor').replace('{d}',dLocal(new Date(d+'T00:00'),{day:'numeric',month:'short'}));}
 /* The same label for a message that leaves the phone. delivDateLabel reads
