@@ -346,7 +346,10 @@ body.drawer-open .nav{position:relative;z-index:1}
 
 /* Customers screen */
 .cust-screen{padding:14px 16px}
-.cust-filter{display:flex;gap:7px;margin-bottom:11px;overflow-x:auto;padding-bottom:2px}
+/* These rows scroll horizontally, so the browser draws a scrollbar inside the
+   bottom 2px of padding and it lands on whatever follows. Six gives the
+   indicator its own space. All five chip rows scroll, so all five get it. */
+.cust-filter{display:flex;gap:7px;margin-bottom:11px;overflow-x:auto;padding-bottom:6px}
 .cf-btn{flex:none;padding:12px 14px;min-height:44px;border-radius:18px;border:1.5px solid var(--line);background:var(--paper);color:var(--soft);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
 .cf-btn.on{background:var(--primary);border-color:var(--primary);color:#fff}
 .cust-search{width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);font-size:13px;margin-bottom:11px;box-sizing:border-box}
@@ -783,6 +786,17 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
    figure stays where the eye expects it, but it does not invite a tap. */
 .cash-card.cash-done{background:var(--surface);border-color:var(--line);cursor:default}
 .cash-card.cash-done .cc-l,.cash-card.cash-done .cc-v{color:var(--soft)}
+/* Section headers concatenate their icon and label with nothing between them
+   -- '<svg…/>'+t('repHistory') -- so the icon inherited the SVG default of
+   vertical-align:baseline, which puts a 16px box's bottom on the baseline and
+   its centre 3.75px above the cap centre of the text beside it. Every one of
+   the seven was wrong by the same amount, and every one had a zero gap: the
+   icon touched the first letter. Centred and spaced once, here, rather than
+   at seven call sites that would drift apart again.
+   Timeline rows are deliberately NOT included: .th-row aligns to flex-start
+   so the icon tracks the first line of a two-line row, which is right. */
+.rc-hd-t{display:inline-flex;align-items:center;gap:7px;min-width:0}
+.rc-hd-t svg{flex:none}
 /* The "i" beside a control whose meaning cannot be inferred from its label.
    Sized to the 44px tap target with padding rather than box, so it does not
    push the label around, and it sits on the baseline of the text it follows. */
@@ -1406,7 +1420,7 @@ select::-ms-expand{display:none}
       <div class="set-section">
         <div class="set-label" id="setPerfTitle">My performance</div>
         <div class="cust-filter" id="perfChips" style="margin:2px 0 8px"></div>
-        <div class="field-hint" id="perfScope" style="margin:-4px 0 8px"></div>
+        <div class="field-hint" id="perfScope" style="margin:0 0 8px"></div>
         <div class="set-perf" id="perfGrid"></div>
         <div style="display:flex;gap:9px;margin-top:12px">
           <button class="btn set-export" onclick="exportCSV()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span id="setExCSV">Export CSV</span></button>
