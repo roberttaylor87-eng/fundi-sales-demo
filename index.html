@@ -7476,7 +7476,11 @@ function buildCustPages(cb){
     var CAT=custCategories(orders);
     var shown=CAT.rows.slice(0,4);
     if(CAT.uncat>0)shown.push({k:t('custDocUncat'),v:CAT.uncat,c:RP.line});
-    var t2c=rpCard(ctx,M,y2,CW,330,t('custDocWhatTheyBuy'));
+    /* 78 title + 22 subtitle + rows*52 + 28 pad. Was a flat 330 handing the
+       bars 222, which fits four rows of the five this card can hold -- four
+       categories plus uncategorised -- so the last one was dropped. */
+    var t2h=78+22+Math.max(1,shown.length)*52+28;
+    var t2c=rpCard(ctx,M,y2,CW,t2h,t('custDocWhatTheyBuy'));
     if(!shown.length)rpEmpty(ctx,M+28,t2c,CW-56,t('custDocNoData'));
     else{
       var covered=shown.reduce(function(a,d){return a+d.v;},0);
@@ -7486,7 +7490,7 @@ function buildCustPages(cb){
            :t('custDocTopCats').replace('{n}',Math.min(4,CAT.rows.length))
                                .replace('{m}',CAT.rows.length).replace('{p}',pct),
            M+28,t2c+6,18,600,RP.soft);
-      rpBars(ctx,M+28,t2c+22,CW-56,222,shown);
+      rpBars(ctx,M+28,t2c+22,CW-56,shown.length*52,shown);
     }
     rpFoot(ctx,page,TOTAL);emit();
   }
