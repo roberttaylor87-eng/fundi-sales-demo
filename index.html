@@ -378,7 +378,7 @@ html.dark .cust-av{background:#1C2D40;border-color:#5B9EF4;color:#5B9EF4}
 .set-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .set-row:last-child{border-bottom:none}
 .set-row span{font-size:13px;color:var(--ink)}
-.set-toggle-pair{display:flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden}
+.set-toggle-pair{display:flex;border:1.5px solid var(--line);border-radius:9px}
 .set-lang{padding:6px 14px;font-size:12px;font-weight:700;background:var(--paper);color:var(--soft);border:none;cursor:pointer}
 .set-lang.on{background:var(--primary);color:#fff}
 .set-dark-toggle{width:44px;height:24px;border-radius:24px;border:none;background:var(--line);cursor:pointer;position:relative;transition:background .2s}
@@ -724,7 +724,7 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 .set-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .set-row:last-child{border-bottom:none}
 .set-row span{font-size:13px;color:var(--ink)}
-.set-toggle-pair{display:flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden}
+.set-toggle-pair{display:flex;border:1.5px solid var(--line);border-radius:9px}
 .set-lang{padding:6px 14px;font-size:12px;font-weight:700;background:var(--paper);color:var(--soft);border:none;cursor:pointer}
 .set-lang.on{background:var(--primary);color:#fff}
 .set-dark-toggle{width:44px;height:24px;border-radius:24px;border:none;background:var(--line);cursor:pointer;position:relative;transition:background .2s}
@@ -811,6 +811,33 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
   letter-spacing:.2px;margin-top:1px;text-align:right;white-space:nowrap}
 .rc-hd-t{display:inline-flex;align-items:center;gap:7px;min-width:0}
 .rc-hd-t svg{flex:none}
+/* A tap target has to be 44px even when the thing you can see is smaller.
+   This grows the hit area with an absolutely-positioned pseudo-element
+   rather than the box, so nothing reflows -- the control looks identical and
+   the finger gets what it needs. ::before because the toggle's knob and the
+   info dot already use their own children and ::after.
+   Only controls that stand alone are listed. Stacked rows share the gap
+   between them, so growing those would put two targets over one pixel; they
+   need a layout decision instead and are reported rather than changed.
+   .rp-pipe is deliberately not here: measured, its rows are 20px tall with a
+   7px gap, so a 44px hit area reaches 12px into the row above and below and a
+   tap near a boundary picks the wrong pipeline stage. A target that big and
+   wrong is worse than one that is small and right.
+   .add is the + on a catalogue row: 40px inside a 66px row with 13px clear on
+   every side, and the row itself is not clickable, so the extra 2px per side
+   takes a tap from nothing. 148 of them, the largest single group. */
+/* The EN/SW pair used to round its corners by clipping its children, which
+   clipped the hit areas below with them -- the buttons measured 44px and
+   still took a tap only on the visible 26. The children carry the rounding
+   themselves now (9px less the 1.5px border), so nothing needs clipping.
+   Keep these two in step with .set-toggle-pair's radius if it ever changes. */
+.set-lang:first-child{border-radius:7.5px 0 0 7.5px}
+.set-lang:last-child{border-radius:0 7.5px 7.5px 0}
+.sl-paid,.sl-owed,.demo-tip-x,.mc-eye,.set-lang,.set-dark-toggle,.info-i,.add,.hbgr{position:relative}
+.sl-paid::before,.sl-owed::before,.demo-tip-x::before,.info-i::before,.add::before,.hbgr::before,
+.mc-eye::before,.set-lang::before,.set-dark-toggle::before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:100%;height:100%;min-width:44px;min-height:44px}
 /* The "i" beside a control whose meaning cannot be inferred from its label.
    Sized to the 44px tap target with padding rather than box, so it does not
    push the label around, and it sits on the baseline of the text it follows. */
@@ -819,7 +846,9 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
   border:1.5px solid var(--line);background:var(--paper);color:var(--soft);
   border-radius:50%;font-size:11px;font-weight:800;font-style:italic;
   line-height:1;cursor:pointer;position:relative}
-.info-i::after{content:"";position:absolute;top:-13px;left:-13px;right:-13px;bottom:-13px}
+/* Its hit area is the shared rule above. It used to be a -13px inset, which
+   assumed the dot rendered at 18px; it renders at 15.33, so the target came
+   out 41.33 and never reached 44. A min box measures itself instead. */
 .info-i:active{background:var(--primary-tint);color:var(--primary);border-color:var(--primary)}
 .glyph-rise{display:inline-block;transform:translateY(-.07em)}
 .glyph-rise.by-word{transform:translateY(-.1em)}
