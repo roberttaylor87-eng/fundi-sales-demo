@@ -3654,7 +3654,7 @@ function runCalc(){
 }
 function calcRequestApproval(){
   const phone=(document.getElementById('bossPhoneInp')?.value||loadBossPhone()).trim().replace(/\D/g,'');
-  if(!phone){toast(t('noBossPhone'));return;}
+  if(!waTo(phone)){toast(t('noBossPhone'));return;}
   saveBossPhone(phone);
   const r=state.calcResult; if(!r) return;
   const over=r.quote-r.allowance;
@@ -10391,7 +10391,7 @@ function handoverSummary(h){
 }
 function sendHandover(){
   var phone=(loadBossPhone()||'').replace(/\D/g,'');
-  if(!phone){toast(t('noBossPhone'));return;}
+  if(!waTo(phone)){toast(t('noBossPhone'));return;}
   /* Its sibling saveHandoverPdf has asked first since the download work; this
      path recorded on the single tap. Both commit the same irreversible thing
      -- every collection stamped with a handover id and immutable after -- so
@@ -10400,7 +10400,7 @@ function sendHandover(){
 }
 function sendHandoverGo(){
   var phone=(loadBossPhone()||'').replace(/\D/g,'');
-  if(!phone){toast(t('noBossPhone'));return;}
+  if(!waTo(phone)){toast(t('noBossPhone'));return;}
   var h=recordHandover();if(!h)return;
   /* The boss used to receive thirty numbered lines of plain text. He now
      receives the document itself as an image with the summary beneath it,
@@ -11151,11 +11151,18 @@ function wfLeoCards(){
     var list=by[f.k];
     if(!list||!list.length)return;
     out.push({r:f.r,html:leoCard(f.cls,wfListSvg(),
-      plural2(f.one,f.many,list.length),t(f.sub),'',"wfOpenWaiting()")});
+      plural2(f.one,f.many,list.length),t(f.sub),'',"wfBoardOpen('"+f.k+"')")});
   });
   return out;
 }
-function wfOpenWaiting(){state.ordFilter='live';showScreen('orders');}
+/* wfOpenWaiting is gone. The feed card names a step -- "1 order for the store"
+   -- and used to open the whole live list, while the board cell beside it
+   opened the same screen filtered to that step. Two routes to one place, and
+   the card's route never cleared state.ordStep, so a step left set by an
+   earlier board tap intersected with the card's filter and the list came back
+   empty. A card that names a step opens that step, through the one function
+   that does it. */
+function wfOpenCollect(){state.ordStep=null;state.ordFilter='all';showScreen('orders');}
 /* Only when there is a batch worth batching. Two is the threshold rather than
    one, because a bar offering to do all of a single order is noise on the
    ordinary day and this app is used on ordinary days far more than record
@@ -11341,7 +11348,6 @@ function wfCollectCards(){
     plural2('leoCollect1','leoCollect',list.length),
     t('leoCollectSub').replace('{n}',fmt(owed)),'',"wfOpenCollect()")}];
 }
-function wfOpenCollect(){state.ordFilter='all';showScreen('orders');}
 function wfWaiting(){
   var by={};
   pendingDeliveries().forEach(function(o){
@@ -11467,7 +11473,7 @@ function cxAsk(oid,cid){
   var c=carrierById(cid);
   if(!o||!c)return;
   var phone=String(c.phone||'').replace(/\D/g,'');
-  if(!phone){toast(t('cxNoPhone'));return;}
+  if(!waTo(phone)){toast(t('cxNoPhone'));return;}
   var msg=buildCarrierMsg(o,(o.delivNote||''));
   if(!o.delivAsked)o.delivAsked={};
   o.delivAsked[cid]=Date.now();
@@ -11555,7 +11561,7 @@ function wfSendBatch(which){
   var list=wfBatchWaiting(step);
   if(!list.length){toast(t('wfBatchNone'));return;}
   var phone=(which==='boss'?loadBossPhone():loadStorePhone()).replace(/\D/g,'');
-  if(!phone){toast(t(which==='boss'?'noBossPhone':'wfNoStorePhone'));return;}
+  if(!waTo(phone)){toast(t(which==='boss'?'noBossPhone':'wfNoStorePhone'));return;}
   var msg=which==='boss'?buildBossBatchMsg(list):buildStoreBatchMsg(list);
   list.forEach(function(o){if(!o.wfSent)o.wfSent={};o.wfSent[which]=Date.now();});
   saveOrders();
@@ -11594,7 +11600,7 @@ function cxAskBatch(cid){
   var c=carrierById(cid);
   if(!c)return;
   var phone=String(c.phone||'').replace(/\D/g,'');
-  if(!phone){toast(t('cxNoPhone'));return;}
+  if(!waTo(phone)){toast(t('cxNoPhone'));return;}
   var list=cxBatchJobs();
   if(!list.length){toast(t('wfBatchNone'));return;}
   var msg=buildCarrierBatchMsg(list);
@@ -11696,7 +11702,7 @@ function wfSend(oid,which){
   var o=state.orders.find(function(x){return x.id===oid;});
   if(!o)return;
   var phone=(which==='boss'?loadBossPhone():loadStorePhone()).replace(/\D/g,'');
-  if(!phone){toast(t(which==='boss'?'noBossPhone':'wfNoStorePhone'));return;}
+  if(!waTo(phone)){toast(t(which==='boss'?'noBossPhone':'wfNoStorePhone'));return;}
   var msg=which==='boss'?buildBossOrderMsg(o):buildPickMsg(o);
   if(!o.wfSent)o.wfSent={};
   o.wfSent[which]=Date.now();
@@ -12091,7 +12097,7 @@ function wfAskArrived(oid){
   var o=state.orders.find(function(x){return x.id===oid;});
   if(!o)return;
   var phone=String(o.phone||'').replace(/\D/g,'');
-  if(!phone){toast(t('wfNoCustPhone'));return;}
+  if(!waTo(phone)){toast(t('wfNoCustPhone'));return;}
   if(!o.wfSent)o.wfSent={};
   o.wfSent.arrived=Date.now();
   saveOrders();
