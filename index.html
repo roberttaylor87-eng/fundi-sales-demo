@@ -2939,7 +2939,7 @@ function fmtM(n){
   if(Math.abs(v)<1000000)return fmt(v);
   return (Math.round(v/1e5)/10).toFixed(1)+'M';
 }
-function bonusInfo(s){if(s>=50000000)return{rate:0.5,amt:s*0.005};if(s>=30000000)return{rate:0.4,amt:s*0.004};if(s>=20000000)return{rate:0.3,amt:s*0.003};return{rate:0,amt:0};}
+function bonusInfo(s){if(s>=50000000)return{rate:5,amt:s*0.05};if(s>=30000000)return{rate:0.4,amt:s*0.004};if(s>=20000000)return{rate:0.3,amt:s*0.003};return{rate:0,amt:0};}
 const GREETINGS={
  en:[
   "Hi {name}, it's {rep}. Hope business is good — we've got fresh pipe and fittings in. Need anything today?",
