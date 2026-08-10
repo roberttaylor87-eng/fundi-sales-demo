@@ -11401,6 +11401,13 @@ function openPaySheet(oid,forDelivery){
   state.pyForDelivery=!!forDelivery;state.pyOrderId=oid;state.pyMethod=state.pyMethod||'cash';
   renderPaySheet();show('paySheet');
 }
+function payRepaint(){
+  wfRepaint();
+  /* Refreshed only when she is actually looking at it. Opening it
+     unconditionally put a different sheet over the one she came from, which
+     is how finishing a job on the road step landed her somewhere else. */
+  if(document.getElementById('delivOverlay').classList.contains('show'))openDelivSheet();
+}
 function pyCompleteDelivery(){
   var o=state.orders.find(function(x){return x.id===state.pyOrderId;});if(!o)return;
   if(!payBalanced(o)){toast(t('pyBlocked').replace('{n}',fmt(payOutstanding(o))));return;}
@@ -11433,7 +11440,7 @@ function pyAdd(){
   addPayment(o.id,state.pyMethod||'cash',amt,document.getElementById('pyRef').value,state.pyProvider,state.pyRoute);
   document.getElementById('pyAmt').value='';document.getElementById('pyRef').value='';
   state.pyRoute=null;
-  renderPaySheet();renderOrders();renderHome();
+  renderPaySheet();payRepaint();
 }
 function renderPaySheet(){
   var o=state.orders.find(function(x){return x.id===state.pyOrderId;});if(!o)return;
@@ -11511,7 +11518,7 @@ function markDelivered(oid){const o=state.orders.find(x=>x.id===oid);if(!o)retur
     }
     fundiConfirm(t('delivArrivedUnpaid').replace('{c}',o.custName).replace('{n}',fmt(payOutstanding(o))),
       function(){o.delivStatus='delivered';o.delivAt=Date.now();stgMarkDone(oid);saveOrders();
-        hide('paySheet');openDelivSheet();renderHome();renderOrders();
+        hide('paySheet');payRepaint();
         toast(t('delivToCollect').replace('{n}',fmt(payOutstanding(o))));});
     return;
   }
@@ -11520,7 +11527,7 @@ function markDelivered(oid){const o=state.orders.find(x=>x.id===oid);if(!o)retur
      taps separately would be a second answer to one question, which is the
      fault this codebase keeps re-finding — two groupers, four ledgers, four
      win rates. One field, set where the status is set. */
-  fundiConfirm(t('delivMarkDone')+' — '+o.custName+'?',()=>{o.delivStatus='delivered';o.delivAt=Date.now();stgMarkDone(oid);saveOrders();hide('paySheet');openDelivSheet();renderHome();renderOrders();showReward(t('payReward').replace('{n}',fmt(o.total)));});}
+  fundiConfirm(t('delivMarkDone')+' — '+o.custName+'?',()=>{o.delivStatus='delivered';o.delivAt=Date.now();stgMarkDone(oid);saveOrders();hide('paySheet');payRepaint();showReward(t('payReward').replace('{n}',fmt(o.total)));});}
 function sendConfirmReply(oid){const o=state.orders.find(x=>x.id===oid);if(!o||!o.phone)return;
   const first=(o.person||o.custName).split(' ')[0];
   const msg=sw('confirmReplyMsg').replace('{name}',first).replace('{total}',fmt(o.total)).replace('{biz}',state.biz.name||'');
@@ -11798,7 +11805,7 @@ function removePaymentGo(oid,pid){
   var p=o.payments.find(function(x){return x.id===pid;});
   if(p&&p.handoverId){toast(t('payLocked'));return;}
   o.payments=o.payments.filter(function(x){return x.id!==pid;});
-  saveOrders();renderPaySheet();renderOrders();
+  saveOrders();renderPaySheet();payRepaint();
 }
 /* ORDER STAGES ------------------------------------------------------------
    This app touches one step of the rep's day -- writing the order -- and her
@@ -12380,9 +12387,16 @@ function stageSheetList(k){
   (state.stgDone||[]).forEach(function(id){
     if(seen[id])return;
     var o=(state.orders||[]).find(function(x){return x.id===id;});
-    if(o)out.push(o);
+    if(o){seen[id]=1;out.push(o);}
   });
-  return out;
+  /* And it holds its place. Appending it sent the card she had just finished
+     to the bottom of the list under her thumb, which is the same jolt as the
+     row vanishing -- the thing this function exists to prevent. Ranked by the
+     order the sheet opened in; anything that arrived since falls in after. */
+  var pos=state.stgStart||[], idx={};
+  out.forEach(function(o,i){idx[o.id]=i;});
+  var rank=function(o){var i=pos.indexOf(o.id);return i<0?pos.length+idx[o.id]:i;};
+  return out.slice().sort(function(a,b){return rank(a)-rank(b);});
 }
 /* Which orders were at this step when the sheet opened. Derived by comparison
    rather than hooked into every handler, because a hook is a thing to forget
@@ -12481,7 +12495,10 @@ function stgFinishHtml(o){
   if(owed>0){
     h+='<div class="sj-owed">'+t('pyOutstanding').replace('{n}',fmt(owed))+'</div>'
       +'<button class="sj-pay" onclick="openPaySheet(\''+o.id+'\')">'+t('pyTitle')+'</button>';
-  }else if(done){
+  }else if(payBalanced(o)){
+    /* Was gated on `done`, so an order paid for but not yet marked delivered
+       said nothing at all about the money -- she records a collection and the
+       card goes quiet, which reads as the payment not having landed. */
     h+='<div class="sj-done">'+t('pyBalanced')+'</div>';
   }
   h+='<button class="sj-inv" onclick="openInvoice(\''+o.id+'\')">'+t('sjInvoice')+'</button>';
@@ -12493,6 +12510,10 @@ function renderStageSheet(){
   document.getElementById('stgShTitle').textContent=t(d.step.lab);
   document.getElementById('stgShSub').textContent=d.feed?t(d.feed.sub):'';
   var el=document.getElementById('stgShBody');
+  /* Live work, not rendered rows. The road step holds finished cards on screen
+     so nothing vanishes under her thumb, so its list is never empty -- and the
+     ending could not fire on the one step where the day actually ends. */
+  var waiting=stageStepOrders(k).length;
   if(!list.length){el.innerHTML=stgClearHtml();return;}
   var html='';
   /* the batch action, on the two steps that are messages rather than physical
@@ -12535,6 +12556,9 @@ function renderStageSheet(){
     if(openJob)h+='<div class="sj-full">'+ordBodyHtml(o)+'</div>';
     return h+'</div>';
   }).join('');
+  /* Finished rows stay, and the hand-off goes under them: the last delivery of
+     the day should read as the day ending, not as five grey rows. */
+  if(!waiting)html+=stgClearHtml();
   el.innerHTML=html;
 }
 function wfCollectCards(){
