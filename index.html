@@ -634,7 +634,10 @@ html.dark .tag-bo{background:#3A2E14;color:#F0C878}
 .ordfix-cur{font-size:calc(12.5px * var(--ts));font-weight:700;color:var(--soft)}
 .sj-clear{display:flex;flex-direction:column;align-items:center;gap:9px;padding:26px 10px 14px;text-align:center}
 .sjc-tick{width:44px;height:44px;border-radius:22px;background:var(--good);color:#fff;display:grid;place-items:center}
-.sjc-tick svg{width:22px;height:22px;margin:0}
+.sjc-tick svg{width:22px;height:22px;display:block}
+/* beside a name it needs the gap and the optical drop; in the circle it needs
+   neither, which is why the helper carries no positioning of its own */
+.sj-c svg{margin-right:5px;vertical-align:-1px}
 .sjc-t{font-size:calc(15px * var(--ts));font-weight:800;color:var(--ink)}
 .sjc-s{font-size:calc(13px * var(--ts));font-weight:600;color:var(--soft);max-width:30ch;line-height:1.45}
 .sjc-go{width:100%;min-height:50px;margin-top:6px;border:0;border-radius:12px;background:var(--primary);
@@ -2185,6 +2188,7 @@ select::-ms-expand{display:none}
       <button class="x" aria-label="Close" onclick="hide('paySheet')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="sheet-body" style="padding:12px 16px 16px">
       <div id="pyBody"></div>
+      <div id="pyAddWrap">
       <div class="pay-lbl" id="pyAddLbl">Add a collection</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
         <button class="cf-btn" id="pyMCash" onclick="pySetMethod('cash')">Cash</button>
@@ -2203,6 +2207,7 @@ select::-ms-expand{display:none}
         <div class="field-hint" id="pyRefHint" style="margin:-4px 0 8px"></div>
       </div>
       <button class="btn btn-primary" id="pyAddBtn" style="width:100%;padding:12px;font-size:calc(14px * var(--ts))" onclick="pyAdd()">Add collection</button>
+      </div>
       <button class="btn btn-wa" id="pyDoneBtn" style="width:100%;padding:12px;font-size:calc(14px * var(--ts));margin-top:8px;display:none" onclick="pyCompleteDelivery()">Complete delivery</button>
     </div>
   </div>
@@ -11960,7 +11965,13 @@ function renderPaySheet(){
   _amt.placeholder=left>0?String(left):'0';
   if(left>0)_amt.value=String(left); else _amt.value='';
   var dn=document.getElementById('pyDoneBtn');
-  if(dn){dn.textContent=t('pyComplete');dn.style.display=(left===0&&paid>0)?'':'none';}
+  var settled=(left===0&&paid>0);
+  if(dn){dn.textContent=t('pyComplete');dn.style.display=settled?'':'none';}
+  /* Nothing more can be collected once the balance is nought -- pyAdd caps at
+     the outstanding amount and would refuse anything -- so the form comes off
+     and the only thing left to do is the only thing on screen. */
+  var aw=document.getElementById('pyAddWrap');
+  if(aw)aw.style.display=settled?'none':'';
 }
 function markDelivered(oid){const o=state.orders.find(x=>x.id===oid);if(!o)return;
   /* "No payment, no delivery" was written when she drove the van herself, and
@@ -12877,8 +12888,7 @@ function stgMarkDone(oid){
 }
 function wfDoneSvg(){
   return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
-    +' stroke-width="3.2" aria-hidden="true" style="vertical-align:-1px;margin-right:5px">'
-    +'<path d="M5 13l4 4L19 7"/></svg>';
+    +' stroke-width="3.2" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>';
 }
 function wfRepaint(){
   renderOrders();renderHome();
