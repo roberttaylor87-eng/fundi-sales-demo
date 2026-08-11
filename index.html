@@ -12580,25 +12580,38 @@ function wfClock(ms){
   return new Date(ms).toLocaleTimeString(state.lang==='sw'?'sw-TZ':'en-GB',
     {hour:'2-digit',minute:'2-digit'});
 }
+/* ONE card, not six.
+   The board directly above already shows every step and its count, in the
+   order she works them. These were a second rendering of the same six facts
+   sorted a different way -- by rank rather than by sequence -- so one screen
+   taught two orders for one pipeline, which is most of why it read as "too
+   much going on". The board answers "where is the day"; the feed answers
+   "what do I do next", and that is one card.
+
+   Lowest rank wins, and because every step waiting on HER ranks ahead of
+   every step waiting on somebody else, that naturally picks something she can
+   act on and only falls back to a waiting one when there is nothing else. */
 function wfLeoCards(){
-  var by=wfWaiting(), out=[];
+  var by=wfWaiting(), best=null;
   WF_FEED.forEach(function(f){
     var list=by[f.k];
     if(!list||!list.length)return;
     wfSplitSent(f.k,list).forEach(function(part){
       if(!part.list.length)return;
       var sent=part.sent&&f.subSent;
+      var r=sent?f.rSent:f.r;
+      if(best&&best.r<=r)return;
       var txt=t(sent?f.subSent:f.sub);
       if(sent){
         var since=wfSentSince(part.list,WF_SENT_KEY[f.k]);
         txt=txt.replace('{t}',since?wfClock(since):'');
       }
-      out.push({r:sent?f.rSent:f.r,html:leoCard(f.cls,wfListSvg(),
+      best={r:r,html:leoCard(f.cls,wfListSvg(),
         plural2(sent?f.oneSent:f.one,sent?f.manySent:f.many,part.list.length),
-        txt,'',"wfBoardOpen('"+f.k+"')")});
+        txt,'',"wfBoardOpen('"+f.k+"')")};
     });
   });
-  return out;
+  return best?[best]:[];
 }
 /* wfOpenWaiting is gone. The feed card names a step -- "1 order for the store"
    -- and used to open the whole live list, while the board cell beside it
