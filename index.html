@@ -2917,6 +2917,12 @@ function loadCustomers(){
         ['phone2','landmark','tin','terms','notes'].forEach(function(k){
           if(c[k])o[k]=String(c[k]).slice(0,300);
         });
+        /* aliases is named HERE deliberately: this whitelist drops anything it
+           does not list, which is how the rep-set discount was lost for days.
+           Without it every previous name is forgotten on the next boot and the
+           join it exists to protect breaks silently. */
+        if(Array.isArray(c.aliases))o.aliases=c.aliases.filter(function(x){
+          return typeof x==='string'&&x;}).slice(0,40);
         if(c.contactedAt&&isFinite(+c.contactedAt))o.contactedAt=+c.contactedAt;
         if(c.demo)o.demo=1;   /* the whitelist drops anything not named here */
         return o;
@@ -2934,7 +2940,13 @@ function seedPersist(key,rows){
   try{lsSet(key,JSON.stringify(rows));}catch(e){}
   return rows;
 }
-function saveCustomers(){lsSet('fundi_customers',JSON.stringify(state.customers));}
+/* Every customer write comes through here, so the name index is dropped here
+   rather than at each call site. An index invalidated in three places out of
+   five is a stale index nobody is told about. */
+function saveCustomers(){
+  if(typeof custIndexInvalidate==='function')custIndexInvalidate();
+  return lsSet('fundi_customers',JSON.stringify(state.customers));
+}
 const CUSTOMERS=loadCustomers();
 const LANG = {
  en:{sub:"QUOTE BUILDER",hardware:"Sales",offline:"Works offline",shareCopied:"Copied \u2014 paste it into WhatsApp",shareFailed:"Could not share. Copy the message above by hand.",offlineNot:"Needs a connection",updReady:"A new version is ready",updReload:"Reload",cust:"Customer name…",
@@ -3409,7 +3421,16 @@ function loadQuotes(){
     seedQuotes().concat(backfillQuotes()));       /* seed path only: backfill never re-runs */
 }
 function saveQuotes(){lsSet('fundi_quotes2',JSON.stringify(state.quotes));}
-state.customers=CUSTOMERS; state.prospects=loadProspects(); state.ktRound=loadKtRound(); state.ktRounds=loadKtRounds(); state.custView='c'; state.manualDone=loadManualTasks(); state.stock=loadStock(); state.expandedOrder=null; state.expandedFu=null; state.delivOpen=false; state.expandedDeliv=null; state.dark=!!localStorage.getItem('fundi_dark');applyDark(); state.orders=loadOrders(); state.orders.forEach(o=>{if(!o.total)o.total=itemsTotal(o.items);}); demoOrdersInit(); state.wins=loadWins(); state.quotes=loadQuotes(); state.carriers=loadCarriers(); reconcileQuotes();
+state.customers=CUSTOMERS; state.prospects=loadProspects(); state.ktRound=loadKtRound(); state.ktRounds=loadKtRounds(); state.custView='c'; state.manualDone=loadManualTasks(); state.stock=loadStock(); state.expandedOrder=null; state.expandedFu=null; state.delivOpen=false; state.expandedDeliv=null; state.dark=!!localStorage.getItem('fundi_dark');applyDark(); state.orders=loadOrders(); state.orders.forEach(o=>{if(!o.total)o.total=itemsTotal(o.items);}); demoOrdersInit();
+/* Customer identity, after both customers and orders exist. Idempotent, so it
+   runs every boot and picks up a name typed since the last one. The demo
+   history is stamped too: it is never persisted, but every aggregate reads it
+   and an unstamped record would group by name while its neighbours group by
+   id -- two answers to one question, which is the fault this closes. */
+(function(){
+  var r=migrateCustIds(state.orders.concat(typeof DEMO_HISTORY!=='undefined'?DEMO_HISTORY:[]));
+  if(r.stamped||r.aliased||r.merged){try{saveOrders();saveCustomers();}catch(e){}}
+})(); state.wins=loadWins(); state.quotes=loadQuotes(); state.carriers=loadCarriers(); reconcileQuotes();
 function currentSales(){return allOrdersAll().reduce((s,o)=>s+o.total,0);}
 /* ---- the home money card's month ---------------------------------------
    0 is this month, -1 last month. Never forward of today: there is nothing
@@ -3608,7 +3629,7 @@ function confirmOrder(qid){const q=state.quotes.find(x=>x.id===qid);if(!q||q.sta
   const snap={qid:q.id,stock:{},wins:state.wins,orderId:newId('o')};
   commitStock(q.items,snap);
   q.status='ordered';saveQuotes();
-  const oc=q.custId?CUSTOMERS.find(x=>x.id===q.custId):null;state.orders.push({quoteId:q.id,delivBudget:delivMax(q.total||0),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',phone:oc?oc.phone:'',total:q.total,discAmt:(q.discAmt||0),vatAmt:(q.vatAmt||0),vatRate:(q.vatRate||0),vatIncl:!!q.vatIncl,items:q.items,date:Date.now(),delivSchedule:null,delivStatus:'pending',lockState:ORD_OPEN,amendments:[]});reconcileLines(q.items,q.total,q.discAmt||0,q.vatIncl?0:(q.vatAmt||0),'order '+snap.orderId);
+  const oc=q.custId?CUSTOMERS.find(x=>x.id===q.custId):null;state.orders.push({quoteId:q.id,delivBudget:delivMax(q.total||0),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',phone:oc?oc.phone:'',total:q.total,discAmt:(q.discAmt||0),vatAmt:(q.vatAmt||0),vatRate:(q.vatRate||0),vatIncl:!!q.vatIncl,items:q.items,date:Date.now(),delivSchedule:null,delivStatus:'pending',lockState:ORD_OPEN,amendments:[],custId:(oc?oc.id:custIdByName(q.custName))});reconcileLines(q.items,q.total,q.discAmt||0,q.vatIncl?0:(q.vatAmt||0),'order '+snap.orderId);
   saveOrders();
   bumpWins();state.lastUndo=snap;
   showReward(t('rewardmsg').replace('{n}',fmt(q.total))+' \u00b7 '+t('rewardDeliv').replace('{b}',fmt(delivMax(q.total||0))));
@@ -4958,16 +4979,27 @@ var CHASE_KEY='fundi_chases';
 var CHASE_HOLD={messaged:14,spoken:14,snoozed:7};   /* days a chase holds */
 function loadChases(){var o=lsJSON(CHASE_KEY);return (o&&typeof o==='object')?o:{};}
 function saveChases(c){lsSet(CHASE_KEY,JSON.stringify(c||{}));}
+/* Keyed by identity, not by the display name. A chase recorded against
+   "Mbezi Hardware" was lost the moment the shop was renamed, and inherited by
+   whoever was typed with that name next. */
+function chaseKey(nameOrId){
+  if(nameOrId==null)return '';
+  var id=(typeof nameOrId==='object')?custKeyOf(nameOrId):
+    (custById(nameOrId)?nameOrId:custIdByName(nameOrId));
+  return String(id==null?nameOrId:id);
+}
 function chaseRecord(name,kind){
   var c=loadChases();
-  c[name]={kind:kind,at:Date.now()};
+  c[chaseKey(name)]={kind:kind,at:Date.now()};
   saveChases(c);
 }
-function chaseClear(name){var c=loadChases();delete c[name];saveChases(c);}
+function chaseClear(name){var c=loadChases();delete c[chaseKey(name)];saveChases(c);}
 /* Live means "she has done something about this and it has not run out".
    lastOrderAt voids it: they answered, so there is nothing left to chase. */
 function chaseLive(name,lastOrderAt){
-  var e=loadChases()[name];
+  var all=loadChases();
+  /* the old shape was keyed by name; a stored entry under either key is hers */
+  var e=all[chaseKey(name)]||all[name];
   if(!e)return null;
   if(lastOrderAt&&e.at<lastOrderAt)return null;
   if(e.kind==='closed')return e;
@@ -4982,12 +5014,12 @@ function chaseLive(name,lastOrderAt){
 function lapsedSplit(){
   var rows=rpLapsed(), last={};
   DATA.source().orders.forEach(function(o){
-    var k=o.custName||'?';
-    if(!last[k]||o.date>last[k])last[k]=o.date;
+    var g=String(custKeyOf(o));
+    if(!last[g]||o.date>last[g])last[g]=o.date;
   });
   var todo=[], done=[];
   rows.forEach(function(x){
-    var live=chaseLive(x.k,last[x.k]);
+    var live=chaseLive(x.id!=null?x.id:x.k,last[String(x.id)]);
     if(live){x.chase=live;done.push(x);}else todo.push(x);
   });
   return {todo:todo,done:done,all:rows};
@@ -5029,6 +5061,123 @@ function chaseUndo(nm){chaseClear(nm);renderLapsed();renderHome();}
 function chaseWhen(e){
   var d=Math.floor((Date.now()-e.at)/DAY);
   return t(d<=0?'chaseToday':(d===1?'chaseYesterday':'chaseDaysAgo')).replace('{n}',d);
+}
+
+/* ═══ WHICH CUSTOMER IS THIS ═════════════════════════════════════════════
+   Orders were keyed on custName -- a mutable display string typed by hand.
+   Rename a shop and its history splits in two; two shops that happen to
+   share a name merge into one. Customer payment behaviour over time is the
+   most valuable thing in this record and it was resting on that.
+
+   Additive, deliberately. custName STAYS as the display value on every
+   order; custId is added beside it and becomes the join key. A record
+   written before ids existed still resolves, through the name index, so
+   nothing is stranded.
+
+   Merging is on EXACT normalisation only -- trim, case-fold, collapse
+   whitespace. No fuzzy matching, ever: shops here are named "<area> <trade
+   words>", so Mbezi Hardware and Mbezi Beach Sanitary Ware are structurally
+   near-identical and completely different businesses. Eight such pairs sit
+   in the book today. A false merge welds two shops' payment histories
+   together, which is the exact failure this is meant to prevent. */
+function custNorm(nm){return String(nm==null?'':nm).trim().toLowerCase().replace(/\s+/g,' ');}
+var _custIx=null;
+function custIndexInvalidate(){_custIx=null;}
+function custIndex(){
+  if(_custIx)return _custIx;
+  var ix=Object.create(null);
+  (state.customers||[]).forEach(function(c){
+    if(!c)return;
+    var keys=[c.biz].concat(c.aliases||[]);
+    keys.forEach(function(k){var q=custNorm(k);if(q&&ix[q]==null)ix[q]=c.id;});
+  });
+  _custIx=ix;return ix;
+}
+function custIdByName(nm){
+  var q=custNorm(nm);
+  if(!q)return null;
+  var id=custIndex()[q];
+  /* A name with no customer record still has to group consistently, or every
+     aggregate scatters it. The normalised string is its own stable key. */
+  return id!=null?id:('n:'+q);
+}
+/* The one answer to "which customer is this record about". */
+function custKeyOf(rec){
+  if(!rec)return null;
+  return rec.custId!=null?rec.custId:custIdByName(rec.custName);
+}
+/* The only moment a customer acquires a second name. Kept out of the edit
+   handler so the rule is testable and so any other rename path gets it too. */
+function custRename(c,newName){
+  if(!c||!newName)return false;
+  var was=c.biz;
+  if(custNorm(was)===custNorm(newName)){c.biz=newName;return false;}
+  if(!Array.isArray(c.aliases))c.aliases=[];
+  if(was&&c.aliases.indexOf(was)<0)c.aliases.push(was);
+  c.biz=newName;
+  custIndexInvalidate();
+  return true;
+}
+function custById(id){
+  return (state.customers||[]).filter(function(c){return c&&c.id===id;})[0]||null;
+}
+function custNameOf(rec){
+  if(!rec)return '';
+  var c=rec.custId!=null?custById(rec.custId):null;
+  return (c&&c.biz)||rec.custName||'';
+}
+
+/* Idempotent: an order already carrying custId is left alone, and a customer
+   already carrying its own name as an alias is not given it twice. Re-runs
+   on every boot so a name typed today is indexed tomorrow. */
+function migrateCustIds(orders){
+  var out={stamped:0,aliased:0,merged:0,unmatched:0};
+  var seen=Object.create(null);
+  (state.customers||[]).forEach(function(c){
+    if(!c)return;
+    if(!Array.isArray(c.aliases))c.aliases=[];
+    var q=custNorm(c.biz);
+    if(!q)return;
+    if(seen[q]!=null){
+      /* two customer RECORDS whose names normalise the same: the later one is
+         the same shop typed again, so its name becomes an alias of the first */
+      var keep=custById(seen[q]);
+      if(keep&&keep.id!==c.id&&keep.aliases.indexOf(c.biz)<0){keep.aliases.push(c.biz);out.merged++;}
+      return;
+    }
+    seen[q]=c.id;
+  });
+  custIndexInvalidate();
+  (orders||[]).forEach(function(o){
+    if(!o||o.custId!=null)return;
+    var id=custIdByName(o.custName);
+    if(id==null){out.unmatched++;return;}
+    o.custId=id;out.stamped++;
+  });
+  if(out.merged)custIndexInvalidate();
+  return out;
+}
+/* Names that normalise apart but look alike. NEVER merged -- reported, so a
+   human decides. Structural similarity is the naming convention in this
+   trade, not a duplicate signal. */
+function custNearMatches(){
+  var names=(state.customers||[]).map(function(c){return c&&c.biz;}).filter(Boolean);
+  var out=[];
+  function lev(a,b){
+    var m=a.length,nn=b.length;if(!m||!nn)return Math.max(m,nn);
+    var p=[];for(var i=0;i<=nn;i++)p[i]=i;
+    for(var i2=1;i2<=m;i2++){var prev=p[0];p[0]=i2;
+      for(var j=1;j<=nn;j++){var tmp=p[j];
+        p[j]=Math.min(p[j]+1,p[j-1]+1,prev+(a[i2-1]===b[j-1]?0:1));prev=tmp;}}
+    return p[nn];
+  }
+  for(var i=0;i<names.length;i++)for(var j=i+1;j<names.length;j++){
+    var a=custNorm(names[i]),b=custNorm(names[j]);
+    if(a===b)continue;
+    var d=lev(a,b), sim=1-d/Math.max(a.length,b.length);
+    if(sim>=0.88)out.push({a:names[i],b:names[j],sim:Math.round(sim*1000)/1000});
+  }
+  return out.sort(function(x,y){return y.sim-x.sim;});
 }
 
 function applyLang(){
@@ -5500,7 +5649,8 @@ function finaliseOrder(){
   var oc=q.custId?CUSTOMERS.find(function(x){return x.id===q.custId;}):null;
   state.orders.push({v:ORDER_V,quoteId:q.id,delivBudget:delivMax(q.total||0),repId:(q&&q.repId)||REP_ID,repName:(q&&q.repName)||repName(),id:snap.orderId,custName:q.custName,area:oc?oc.area:'',person:oc?oc.person:'',
     phone:oc?oc.phone:'',total:q.total,discAmt:(q.discAmt||0),vatAmt:(q.vatAmt||0),vatRate:(q.vatRate||0),vatIncl:!!q.vatIncl,items:q.items,date:Date.now(),
-    delivSchedule:null,delivStatus:'pending',lockState:ORD_OPEN,amendments:[]});
+    delivSchedule:null,delivStatus:'pending',lockState:ORD_OPEN,amendments:[],
+    custId:(oc?oc.id:custIdByName(q.custName))});
   reconcileLines(q.items,q.total,q.discAmt||0,q.vatIncl?0:(q.vatAmt||0),'order '+snap.orderId);
   saveOrders();bumpWins();state.lastUndo=snap;
   showReward(t('rewardmsg').replace('{n}',fmt(q.total))+' \u00b7 '+t('rewardDeliv').replace('{b}',fmt(delivMax(q.total||0))));
@@ -6556,7 +6706,12 @@ function saveCustomerEdit(){
   var phone=(document.getElementById('cePhone').value||'').trim().replace(/\D/g,'');
   if(!biz||phone.length<9){toast(t('needNamePhone'));return;}
   var wasName=c.biz;
-  c.biz=biz;c.person=person;c.phone=phone;
+  /* The old name becomes an alias, so a record still naming that string keeps
+     resolving to this customer. Orders already carry custId and resolve by it
+     regardless; this is for anything typed under the old name, and for the
+     index that turns a name back into an identity. */
+  custRename(c,biz);
+  c.person=person;c.phone=phone;
   c.area=(document.getElementById('ceArea').value||'').trim();
   c.tier=document.getElementById('ceTier').value==='vip'?'vip':'regular';
   c.disc=readDiscInput('ceDisc',c.tier==='vip'?15:10);
@@ -8454,20 +8609,24 @@ function rpNewReturning(res,from){
    the most rather than only which is longest. */
 function rpLapsed(){
   var by=Object.create(null);
+  /* Grouped by identity and labelled by the current display name: a shop
+     renamed mid-history was previously two shops, each with half the orders
+     and neither looking overdue. */
   DATA.source().orders.forEach(function(o){
-    var k=o.custName||'?';
-    (by[k]=by[k]||{d:[],v:0}).d.push(o.date);
-    by[k].v+=(o.total||0);
+    var g=String(custKeyOf(o));
+    if(!by[g])by[g]={d:[],v:0,k:custNameOf(o)||o.custName||'?'};
+    by[g].d.push(o.date);
+    by[g].v+=(o.total||0);
   });
   var out=[],now=Date.now();
-  Object.keys(by).forEach(function(k){
-    var e=by[k], ds=e.d.sort(function(a,b){return a-b;});
+  Object.keys(by).forEach(function(g){
+    var e=by[g], k=e.k, ds=e.d.sort(function(a,b){return a-b;});
     if(ds.length<3)return;
     var span=0;for(var i=1;i<ds.length;i++)span+=ds[i]-ds[i-1];
     var gap=span/(ds.length-1)/DAY;
     var since=(now-ds[ds.length-1])/DAY;
     if(since>gap*1.5&&since>=14)
-      out.push({k:k,since:Math.round(since),gap:Math.max(1,Math.round(gap)),v:e.v});
+      out.push({k:k,id:g,since:Math.round(since),gap:Math.max(1,Math.round(gap)),v:e.v});
   });
   return out.sort(function(a,b){return b.v-a.v;});
 }
@@ -11890,7 +12049,8 @@ var DATA={
     var m=Object.create(null);
     res.rows.forEach(function(o){
       var buckets=[];
-      if(key==='customer')buckets=[o.custName||'?'];
+      if(key==='customer')buckets=[{k:custNameOf(o)||o.custName||'?',
+        v:res.valueOf(o),gid:custKeyOf(o)}];
       else if(key==='area')buckets=[o.area||'?'];
       else if(key==='rep')buckets=[o.repName||t('repUnknown')];
       else if(key==='category'||key==='product'){
@@ -11905,9 +12065,13 @@ var DATA={
       buckets.forEach(function(b){
         var k=typeof b==='string'?b:b.k;
         var v=typeof b==='string'?res.valueOf(o):b.v;
-        if(!m[k])m[k]={key:k,total:0,count:0,ids:[],pid:(b&&b.pid)||null,cat:(b&&b.cat)||null};
-        m[k].total+=v;m[k].ids.push(o.id);
-        if(m[k].ids.length===1||m[k].ids[m[k].ids.length-2]!==o.id)m[k].count++;
+        /* Keyed by identity where the bucket carries one, still by the label
+           where it does not. A rename must not split a customer into two rows,
+           and the label is what the reader sees either way. */
+        var g=(b&&b.gid!=null)?String(b.gid):k;
+        if(!m[g])m[g]={key:k,total:0,count:0,ids:[],pid:(b&&b.pid)||null,cat:(b&&b.cat)||null};
+        m[g].total+=v;m[g].ids.push(o.id);
+        if(m[g].ids.length===1||m[g].ids[m[g].ids.length-2]!==o.id)m[g].count++;
       });
     });
     return Object.values(m).sort(function(a,b){return b.total-a.total;});
