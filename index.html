@@ -2123,7 +2123,6 @@ select::-ms-expand{display:none}
       <input id="qFind" type="search" autocomplete="off" placeholder="Type an item name" aria-label="Type an item name">
       <div id="qFindOut"></div>
     </div>
-    <div class="qsent" id="qSentBar" style="display:none"></div>
     <main id="qBody"></main>
     <div class="qfoot" id="qFoot" style="display:none">
       <div class="disc-row" id="qDiscRow" style="display:none;justify-content:space-between;font-size:calc(12.5px * var(--ts));color:var(--good);font-weight:600;margin-bottom:6px"><span id="qDiscLbl"></span><span id="qDiscVal"></span></div>
@@ -2132,7 +2131,6 @@ select::-ms-expand{display:none}
         <button class="btn btn-wa" id="waBtn" onclick="openWhatsApp()">WhatsApp</button>
         <button class="btn btn-formal" id="formalBtn" onclick="openFormal()">Formal quote</button>
       </div>
-      <button class="btn btn-primary" id="qNewBtn" style="display:none;width:100%;margin-top:9px" onclick="startNewQuote()">Start a new quote</button>
       <button class="btn-danger-text clear-pill" id="clearBtn" onclick="clearQuote()">Discard draft</button>
     </div>
     </div>
@@ -3543,6 +3541,21 @@ function relTimeEdit(ms){
   if(d<=0)return t('edToday');
   if(d===1)return t('edYest');
   return t('edAgo').replace('{n}',d);
+}
+/* The newest quote she sent today. quoteSentNow answered this by comparing
+   the LIVE BASKET against the last sent id -- which worked only while the
+   builder still held the quote, and stopped answering at all once sending
+   cleared it. Reading the record instead also makes it survive a reload,
+   which the basket version never did. Calendar-local via isoDate, never a
+   UTC slice: east of Greenwich that reports yesterday for three hours. */
+function lastSentQuote(){
+  var today=todayISO(), best=null;
+  (state.quotes||[]).forEach(function(q){
+    if(!q||!q.sentAt)return;
+    if(isoDate(new Date(q.sentAt))!==today)return;
+    if(!best||q.sentAt>best.sentAt)best=q;
+  });
+  return best;
 }
 function draftsSorted(){
   return draftsAll().slice().sort(function(a,b){
@@ -6251,7 +6264,6 @@ function applyLang(){
   document.getElementById('waBtn').textContent=t('wa');
   document.getElementById('formalBtn').textContent=t('formal');
   document.getElementById('clearBtn').textContent=t('clear');
-  var _qn=document.getElementById('qNewBtn');if(_qn)_qn.textContent=t('qNewQuote');
   document.getElementById('waTitle').textContent=t('watitle');
   document.getElementById('waSub').textContent=t('wasub');
   document.getElementById('waShareBtn').textContent=t('washare');
@@ -6610,8 +6622,13 @@ function totals(){let sum=0,items=0,discBase=0,ovLines=0,discLines=0;
 function updateBar(){saveCart();const x=totals();document.getElementById('bbTotal').textContent=fmt(x.grand);
   var _qs=document.getElementById('qstrip');
   if(_qs)_qs.style.display=(x.lines>0&&state.screen!=='quote')?'':'none';
+  /* The tab is a list now, so the badge counts unfinished QUOTES rather than
+     lines in one of them -- the strip already carries lines and a total, and
+     two controls saying the same thing in different units is worse than one
+     saying something new. Drafts are the work outstanding. */
   var _nb=document.getElementById('navQuoteBadge');
-  if(_nb){if(x.lines>0){_nb.textContent=x.lines;_nb.style.display='';}else _nb.style.display='none';}
+  var _nd=draftsAll().length;
+  if(_nb){if(_nd>0){_nb.textContent=_nd;_nb.style.display='';}else _nb.style.display='none';}
   document.getElementById('bbItems').textContent= x.items===0?('0 '+t('items')):(plural(x.items,'item','items')+' · '+plural(x.lines,'line','lines'));
   document.getElementById('reviewBtn').disabled=x.lines===0;}
 function updateWho(){const nm=state.custName.trim();
@@ -6809,19 +6826,6 @@ function qFindAdd(id){
 function renderQuoteBuild(){updateWho();renderQFind();const body=document.getElementById('qBody');const ids=Object.keys(state.quote);
   if(ids.length===0){body.innerHTML=`<div class="empty">${t('emptyq')}<br>${t('emptyq2')}<div style="margin-top:18px"><button class="btn btn-primary" onclick="showScreen('products')">${t('qEmptyCta')}</button></div></div>`;document.getElementById('qTotal').textContent='0';qFootShow(false);return;}
   qFootShow(true);
-  var _sent=quoteSentNow();
-  var _sb=document.getElementById('qSentBar');
-  if(_sb){
-    _sb.style.display=_sent?'':'none';
-    if(_sent){
-      var _ref=(_sent.docRefs&&_sent.docRefs.QT)||'';
-      _sb.innerHTML='<div class="qs-l">'+t('qSentTitle').replace('{c}',_sent.custName||'')+'</div>'
-        +'<div class="qs-s">'+fmtTSh(_sent.total||0)+' \u00b7 '+relTime(_sent.sentAt)
-        +(_ref?(' \u00b7 '+_ref):'')+'</div>';
-    }
-  }
-  var _nb=document.getElementById('qNewBtn');
-  if(_nb)_nb.style.display=_sent?'':'none';
   body.innerHTML=ids.map(id=>{const p=CATALOGUE.find(x=>x.id==id);const q=state.quote[id];const up=unitPrice(p);const lt=up*q.qty;const edited=q.override!=null;
     return `<div class="qline"><div class="top"><div><div class="nm">${p.name}</div>
       <div class="meta">${[p.size,p.brand].filter(Boolean).join(' · ')}${q.qty>getStock(p.id)?` <span class="tag tag-bo">${t('stkBackLine').replace('{n}',q.qty-getStock(p.id))}</span>`:''}</div></div><div class="lt">${fmt(lt)}</div></div>
@@ -6911,8 +6915,29 @@ function savePriceEdit(){const id=state.priceEditId;const p=CATALOGUE.find(x=>x.
      number on screen to be adjusted rather than losing it */
   if(n<warnAmt){fundiConfirm(t('pxWarn').replace('{v}',fmt(n)).replace('{l}',fmt(p.price)),apply,null,t('pxAnyway'));return;}
   apply();}
-function clearQuote(){try{localStorage.removeItem(CART_KEY);}catch(e){}
-fundiConfirm(t('clearc'),()=>{state.quote={};state.lastQuoteSig=null;state.lastQuoteId=null;renderQuote();updateBar();renderList();closeQuote();});}
+/* Discard this draft. Three faults measured on the old one:
+
+   The customer survived it. QF-6 was reported as a stale banner but the
+   stale CUSTOMER was the other half -- discard, and the next quote silently
+   began for whoever the last one was for.
+
+   It removed CART_KEY BEFORE asking, so answering "no" still threw away the
+   pointer to the draft she had just kept.
+
+   And it landed on Products, which is the redirect QF-3 is about. It goes
+   back to the list, where the other drafts are. */
+function clearQuote(){
+  fundiConfirm(t('clearc'),function(){
+    if(state.draftId)draftRemove(state.draftId);
+    state.draftId=null;state.quote={};
+    state.custId=null;state.custName='';
+    state.lastQuoteSig=null;state.lastQuoteId=null;
+    cartPoint(null);setTier('regular');
+    updateWho();updateCustBtn();updateBar();renderList();
+    state.qView='list';
+    if(state.screen==='quote')renderQuote(); else showScreen('quote');
+  });
+}
 
 function quoteLinesText(){return Object.keys(state.quote).map(id=>{const p=CATALOGUE.find(x=>x.id==id);const q=state.quote[id];const up=unitPrice(p);
   const label=prodLabel(p);
@@ -7042,20 +7067,6 @@ function quoteSent(qid){
   if(state.screen==='quote')renderQuote();
   renderHome();
   toast(t('qSentToast').replace('{c}',_c));
-}
-/* What is on the screen is what went out -- and only while that is true. Change
-   a quantity and the signature moves, the banner goes, and the screen is
-   honestly a quote being built again rather than one that was sent. */
-function quoteSentNow(){
-  if(!state.lastQuoteId||state.lastQuoteSig!==quoteSignature())return null;
-  var q=(state.quotes||[]).find(function(x){return x.id===state.lastQuoteId;});
-  return (q&&q.sentAt)?q:null;
-}
-function startNewQuote(){
-  state.quote={};state.custId=null;state.custName='';
-  state.lastQuoteId=null;state.lastQuoteSig=null;
-  setTier('regular');updateCustBtn();updateWho();updateBar();renderQuote();
-  showScreen('products');
 }
 
 function fmtDocDate(ts){
@@ -12581,15 +12592,24 @@ function renderHome(){
   tipEl.innerHTML=state.tipDismissed?'':`<div class="demo-tip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg><span style="flex:1">${t('demoTip')}</span><button class="demo-tip-x" onclick="state.tipDismissed=true;renderHome()">${t('gotIt')}</button></div>`;
   var _hs=document.getElementById('homeStart');
   if(_hs){
-    var _hq=totals(), _hsent=_hq.lines?quoteSentNow():null;
+    /* Three states, in the order they matter: something half-written, then
+       something sent today, then nothing yet. The draft wins because it is
+       the one with work outstanding. */
+    var _hdraft=draftsSorted()[0]||null;
+    var _hsent=_hdraft?null:lastSentQuote();
     var _hIcon=_hsent
       ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
       : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 12v5M9.5 14.5h5"/></svg>';
     var _hLab=_hsent?t('qSentTitle').replace('{c}',_hsent.custName||'')
-      :(_hq.lines?t('homeContQuote'):t('homeNewQuote'));
+      :(_hdraft?t('homeContQuote'):t('homeNewQuote'));
     var _hSub=_hsent?(fmtTSh(_hsent.total||0)+' \u00b7 '+relTime(_hsent.sentAt))
-      :(_hq.lines?(plural(_hq.items,'item','items')+' \u00b7 TSh '+fmt(_hq.grand)):t('homeNewQuoteSub'));
-    _hs.innerHTML='<button class="home-start'+(_hsent?' hs-done':'')+'" onclick="showScreen(\''+(_hq.lines?'quote':'products')+'\')">'
+      :(_hdraft?(plural(_hdraft.lines||0,'qlDraftSub1','qlDraftSub')+' \u00b7 '+fmtTSh(_hdraft.total||0))
+        :t('homeNewQuoteSub'));
+    /* Straight into the work: resume that draft, or open a blank one. Neither
+       goes to Products any more -- items are typed on the quote screen now. */
+    var _hGo=_hdraft?("quoteOpenDraft('"+_hdraft.id+"')")
+      :(_hsent?"showScreen('quote')":"showScreen('quote');quoteNew()");
+    _hs.innerHTML='<button class="home-start'+(_hsent?' hs-done':'')+'" onclick="'+_hGo+'">'
       +_hIcon
       +'<span class="hs-t"><span class="hs-l">'+_hLab+'</span>'
       +'<span class="hs-s">'+_hSub+'</span></span></button>';
