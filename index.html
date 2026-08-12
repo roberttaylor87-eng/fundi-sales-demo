@@ -405,13 +405,15 @@ html.dark .cust-av{background:#1C2D40;border-color:#5B9EF4;color:#5B9EF4}
   font-size:calc(12px * var(--ts));color:var(--soft)}
 .ow-inv b{color:var(--ink);font-size:calc(13px * var(--ts))}
 .ow-act{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.ow-btn{padding:9px 13px;border-radius:9px;border:1.5px solid var(--primary);background:transparent;
-  color:var(--primary);font-size:calc(13px * var(--ts));font-weight:700;cursor:pointer}
+.ow-btn{padding:9px 13px;min-height:44px;border-radius:9px;border:1.5px solid var(--primary);
+  background:transparent;color:var(--primary);font-size:calc(13px * var(--ts));
+  font-weight:700;cursor:pointer}
 .ow-btn.ow-pri{background:var(--primary);color:#fff}
 .ow-form{background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:12px;margin-bottom:12px}
-.ow-form input{width:100%;padding:10px;margin-bottom:8px;border:1.5px solid var(--line);
-  border-radius:9px;font-size:calc(14px * var(--ts));background:var(--paper);color:var(--ink)}
+.ow-form input,.ow-form select{width:100%;padding:10px;margin-bottom:8px;
+  border:1.5px solid var(--line);border-radius:9px;font-size:calc(14px * var(--ts));
+  background:var(--paper);color:var(--ink);min-height:44px;box-sizing:border-box}
 .ow-hist{font-size:calc(11px * var(--ts));color:var(--soft);margin-top:4px}
 .ow-hist s{opacity:.75}
 .cn-card{margin-bottom:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
