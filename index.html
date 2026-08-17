@@ -2079,7 +2079,7 @@ select::-ms-expand{display:none}
         <button class="btn set-reset" onclick="resetDemoData()" id="setResetBtn">Reset demo data</button>
         <button class="btn set-reh" onclick="rehearsalDay()" id="setRehBtn">Set up a rehearsal day</button>
         <div class="field-hint" id="setRehHint">Clears today and leaves five orders part-way through the day, one at each step. Your customers, catalogue, settings and the last twelve months are untouched.</div>
-        <div style="text-align:center;margin-top:14px;font-size:calc(11px * var(--ts));color:var(--soft)" id="buildStamp">Fundi Sales v2.0 · 17 Aug 2026 · demo build</div>
+        <div style="text-align:center;margin-top:14px;font-size:calc(11px * var(--ts));color:var(--soft)" id="buildStamp">Fundi Sales v2.0 · 18 Aug 2026 · demo build</div>
       </div>
     </div>
   </div>
@@ -4643,9 +4643,12 @@ function runCalc(){
      it; strictly-less-than only made sense while this was a permission gate. */
   state.calcResult={order:order,quote:quote,prov:prov,budget:rule.budget,allowance:rule.allowance,ok:quote<=rule.allowance};
   const tgt=state.calcOrderId?state.orders.find(x=>x.id===state.calcOrderId):null;
-  /* The delivery cost is money and is locked with the rest of it. */
-  if(tgt&&!ordCanEdit(tgt,'delivQuote').ok){
-    ordFixOpen(tgt.id,'delivQuote',quote,'ordFieldDeliv');renderCalc();return;}
+  /* No seal check. delivQuote is the subsidy the business absorbs, not money
+     the customer is charged: it appears on no document and in no message she
+     sends them -- their figure is o.total, which this never touches. Pricing
+     a delivery is forward movement, like stamping a stage, so it is free on a
+     sealed order for the same reason those are. Sending her through the
+     amendment sheet to set a delivery price was friction protecting nothing. */
   if(tgt){tgt.delivProvider=prov;tgt.delivQuote=quote;
     if(tgt.delivBudget==null)tgt.delivBudget=Math.round(rule.allowance);
     tgt.delivApproval=state.calcResult.ok?'self':null;
@@ -15773,8 +15776,8 @@ function cxChoose(oid,cid){
   if(!o||!c)return;
   var bid=(o.delivBids||[]).find(function(b){return b.carrierId===cid;});
   if(!bid)return;
-  var _v=ordCanEdit(o,'delivQuote');
-  if(!_v.ok){ordFixOpen(oid,'delivQuote',bid.amt,'ordFieldDeliv');return;}
+  /* No seal check -- see runCalc. Choosing the carrier who quoted is forward
+     movement and reaches no customer-facing figure. */
   o.delivProvider=c.name;
   o.delivQuote=bid.amt;
   o.delivCarrierId=cid;
@@ -15958,10 +15961,19 @@ function delivRunPrice(runId,cost,provider,carrierId){
   /* strictly less than, the same as a single delivery -- a trip landing
      exactly on the pooled allowance goes to the boss */
   var ok=cost<budget;
-  /* A sealed member cannot silently take a new share of a trip: that is the
-     delivery cost changing on an order the customer already has a figure for. */
-  var locked=orders.filter(function(o){return !ordCanEdit(o,'delivQuote').ok;});
-  if(locked.length){toast(t('ordRunLocked').replace('{n}',locked.length));return null;}
+  /* This used to refuse the whole trip if any member was sealed, and the
+     comment justifying it was wrong on the facts. It claimed the delivery
+     cost was changing on an order the customer already had a figure for --
+     but the customer never sees delivQuote. It is on no document and in no
+     message; their figure is o.total, which grouping does not touch.
+
+     Orders seal the moment an invoice is viewed or a confirmation is sent,
+     which is long before delivery is arranged, so sealed was the ORDINARY
+     state by grouping time and this refused the ordinary day. Reported from
+     the handset: the app suggested grouping and then would not do it.
+
+     Grouping is forward movement. delivRunClear, which undoes it, is still
+     gated -- that is the amendment path doing its job. */
   /* Recorded BEFORE the shares are written. Afterwards each member carries a
      share rather than the vehicle price, so the shortfall the grouping
      actually resolved would be gone. Only members that had one: an order that
