@@ -664,11 +664,6 @@ html.dark .tag-bo{background:#3A2E14;color:#F0C878}
 .qfoot{margin:14px 16px 0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
 .navbtn{position:relative}
 .nav-badge{position:absolute;top:0;left:50%;margin-left:4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--primary);color:#fff;font-size:calc(11px * var(--ts));line-height:18px;font-weight:800;text-align:center}
-.home-start{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--primary);color:#fff;border:0;border-radius:14px;padding:14px 16px;margin-bottom:12px;cursor:pointer;min-height:56px}
-.home-start .hs-l{display:block;font-size:calc(15.5px * var(--ts));font-weight:800}
-.home-start .hs-s{display:block;font-size:calc(12.5px * var(--ts));font-weight:600;opacity:.85;margin-top:2px}
-.home-start svg{flex:none}
-.home-start.hs-done{background:var(--good);color:#fff}
 .qtop .custbtn{padding:9px 11px;font-size:calc(14px * var(--ts))}
 .date-field{text-align:left;font-family:inherit;font-weight:600;cursor:pointer;
   display:flex;align-items:center;min-height:46px}
@@ -1347,9 +1342,9 @@ html.dark .toast{background:#2F3B47;box-shadow:0 6px 18px rgba(0,0,0,.5)}
    Sized to the 44px tap target with padding rather than box, so it does not
    push the label around, and it sits on the baseline of the text it follows. */
 .info-i{display:inline-flex;align-items:center;justify-content:center;
-  width:18px;height:18px;margin-left:6px;padding:0;flex:none;vertical-align:-3px;
+  width:1.26em;height:1.26em;margin-left:6px;padding:0;flex:none;vertical-align:middle;
   border:1.5px solid var(--line);background:var(--paper);color:var(--soft);
-  border-radius:50%;font-size:calc(11px * var(--ts));font-weight:800;font-style:italic;
+  border-radius:50%;top:-0.16em;font-size:calc(11px * var(--ts));font-weight:800;font-style:italic;
   line-height:1;cursor:pointer;position:relative}
 /* Its hit area is the shared rule above. It used to be a -13px inset, which
    assumed the dot rendered at 18px; it renders at 15.33, so the target came
@@ -1773,10 +1768,19 @@ select::-ms-expand{display:none}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
           <span id="dTerms">Terms & conditions</span>
         </li>
-        <li class="drawer-item" data-action="owed" role="listitem">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18v12H3z"/><path d="M3 10h18M7 15h4"/></svg>
-          <span id="dOwed">What I owe</span>
-        </li>
+        <!-- What I owe was taken out of the drawer on 18 Aug. It is a Fundi Hardware
+             feature -- the shop's liabilities, not the rep's work -- and it moves
+             there whole when that project starts. See docs/fundi-hardware.md.
+
+             DELIBERATELY the entry only. screenOwed, fundi_suppliers,
+             fundi_supplier_invoices, supLog, supPayReverse and the append-only
+             payments rule check-orderlock enforces are all still here and still
+             work; showScreen('owed') still reaches the screen. Removing the
+             feature now would mean rebuilding it from prose later.
+
+             It is unreachable from the interface until then, which is stated
+             here because an unreachable screen with nothing saying so is the
+             dead-code-that-looks-live fault this codebase keeps deleting. -->
         <li class="drawer-item" data-action="consent" role="listitem">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
           <span id="dConsent">Your data</span>
@@ -1796,8 +1800,7 @@ select::-ms-expand{display:none}
   <div id="screenHome"
  class="screen">
     <div id="demoTipArea"></div>
-    <div id="homeStart"></div>
-    <div id="moneyCard" class="money-card" ></div>
+        <div id="moneyCard" class="money-card" ></div>
     <div id="urgentArea"></div>
     <div id="leoFeed" style="display:none"></div>
     <div id="tileGrid" class="tile-grid"></div>
@@ -3176,7 +3179,7 @@ const LANG = {
    quote:"Quote",nocust:"No customer set",total:"Total",wa:"WhatsApp",formal:"Formal quote",
    clear:"Clear quote",watitle:"WhatsApp message",wasub:"Copy or share to your customer",
    washare:"Share / open WhatsApp",wacopy:"Copy text",each:"each",emptyq:"Quote is empty",
-   emptyq2:"Add products to begin",emptyl:"No products match",emptyl2:"Try a different word",manageCat:"Manage catalogue",manageDone:"Done editing",apNewBtn:"+ New product",qEmptyCta:"Browse products",homeNewQuote:"Start a quote",homeNewQuoteSub:"Pick a customer, then add what they need",homeContQuote:"Finish this quote",
+   emptyq2:"Add products to begin",emptyl:"No products match",emptyl2:"Try a different word",manageCat:"Manage catalogue",manageDone:"Done editing",apNewBtn:"+ New product",qEmptyCta:"Browse products",
    back:"Back",save:"Save as PDF / Print",quotation:"QUOTATION",quotefor:"Quote for",
    custvip:"VIP customer",custreg:"Regular customer",thitem:"Item",thqty:"Qty",thunit:"Unit (TSh)",
    thamt:"Amount (TSh)",totcaps:"TOTAL",
@@ -3197,7 +3200,7 @@ const LANG = {
    quote:"Kadirio",nocust:"Hakuna mteja",total:"Jumla",wa:"WhatsApp",formal:"Kadirio rasmi",
    clear:"Futa kadirio",watitle:"Ujumbe wa WhatsApp",wasub:"Nakili au tuma kwa mteja",
    washare:"Tuma / fungua WhatsApp",wacopy:"Nakili maandishi",each:"kila moja",emptyq:"Kadirio ni tupu",
-   emptyq2:"Ongeza bidhaa kuanza",emptyl:"Hakuna bidhaa",emptyl2:"Jaribu neno lingine",manageCat:"Simamia katalogi",manageDone:"Maliza kuhariri",apNewBtn:"+ Bidhaa mpya",qEmptyCta:"Angalia bidhaa",homeNewQuote:"Anza kadirio",homeNewQuoteSub:"Chagua mteja, kisha ongeza anachohitaji",homeContQuote:"Maliza kadirio hili",
+   emptyq2:"Ongeza bidhaa kuanza",emptyl:"Hakuna bidhaa",emptyl2:"Jaribu neno lingine",manageCat:"Simamia katalogi",manageDone:"Maliza kuhariri",apNewBtn:"+ Bidhaa mpya",qEmptyCta:"Angalia bidhaa",
    back:"Rudi",save:"Hifadhi PDF / Chapisha",quotation:"KADIRIO LA BEI",quotefor:"Kadirio kwa",
    custvip:"Mteja VIP",custreg:"Mteja wa kawaida",thitem:"Bidhaa",thqty:"Idadi",thunit:"Bei (TSh)",
    thamt:"Jumla (TSh)",totcaps:"JUMLA",
@@ -13247,23 +13250,12 @@ function renderHome(){
 
   const tipEl=document.getElementById('demoTipArea');
   tipEl.innerHTML=state.tipDismissed?'':`<div class="demo-tip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg><span style="flex:1">${t('demoTip')}</span><button class="demo-tip-x" onclick="state.tipDismissed=true;renderHome()">${t('gotIt')}</button></div>`;
-  var _hs=document.getElementById('homeStart');
-  if(_hs){
-    /* TWO states, and both are work: resume the half-written quote, or start
-       one. There is deliberately no third for "just sent" -- see above. */
-    var _hdraft=draftsSorted()[0]||null;
-    var _hIcon='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 12v5M9.5 14.5h5"/></svg>';
-    var _hLab=_hdraft?t('homeContQuote'):t('homeNewQuote');
-    var _hSub=_hdraft?(plural(_hdraft.lines||0,'qlDraftSub1','qlDraftSub')+' \u00b7 '+fmtTSh(_hdraft.total||0))
-      :t('homeNewQuoteSub');
-    /* Straight into the work: resume that draft, or open a blank one. */
-    var _hGo=_hdraft?("quoteOpenDraft('"+_hdraft.id+"')")
-      :"showScreen('quote');quoteNew()";
-    _hs.innerHTML='<button class="home-start" onclick="'+_hGo+'">'
-      +_hIcon
-      +'<span class="hs-t"><span class="hs-l">'+_hLab+'</span>'
-      +'<span class="hs-s">'+_hSub+'</span></span></button>';
-  }
+  /* The Start a quote box was removed on 18 Aug at Robert's request. Home no
+     longer carries a primary action, and the rule that it always offered work
+     -- two states, resume a draft or start one -- goes with it deliberately.
+     Quoting is one tap away on the Quotes tab. check-flow asserted that slot
+     existed and that it never wore the done colour; both assertions went with
+     it, and one now asserts it stays gone so it cannot creep back unnoticed. */
   const _mp=homeMonthRange();
   const _mcL=computeLedger({from:_mp.from,to:_mp.to});
   const s=_mcL.sales, sEx=_mcL.salesExVat;
