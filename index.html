@@ -15083,10 +15083,31 @@ var WF_ARRANGE={k:'arrange',lab:'wfWaitDeliv',cls:'deliv'};
 function delivArranged(o){return !!o&&o.delivQuote!=null;}
 function wfStatus(o){
   if(!o||o.delivStatus==='delivered')return null;
+  /* Nothing can be signed, picked or loaded against a trip nobody has priced.
+     This test used to sit just before 'loaded', so an unpriced order fell
+     through to the first step in the list and reported "waiting on the boss"
+     -- a signature for a shortfall nobody had worked out yet, on the card
+     badge, in Leo's feed and in the Orders filter at once. It belongs at the
+     top, where it is also the only place it is needed: !delivArranged(o) and
+     bossNeeded(o)===null are the same condition. */
+  /* A job she has abandoned is waiting on nobody. Without this it went on
+     reporting a step -- "waiting on the store" against work she stopped. */
+  if(o.abandonedAt)return null;
+  if(!delivArranged(o))return WF_ARRANGE;
   var s=stageOf(o);
   for(var i=0;i<WF_STEPS.length;i++){
-    /* it cannot be loaded onto a vehicle nobody has chosen */
-    if(WF_STEPS[i].k==='loaded'&&!delivArranged(o))return WF_ARRANGE;
+    /* One decision, one implementation. spineApproved answers whether the
+       signature is outstanding, and it knows three things this loop did not:
+       Pauline's rule that he only signs over the 3% or over 100,000; that an
+       order grouped onto another trip or paid up by the customer never
+       reaches him; and that a refusal ends the job rather than leaving it
+       waiting for him to change his mind. All three chased him forever.
+       check-spine holds this function and jobSpine to the same answer. */
+    if(WF_STEPS[i].k==='approved'){
+      var a=spineApproved(o);
+      if(a.state==='stopped')return null;
+      if(a.state==='skipped')continue;
+    }
     if(!s[WF_STEPS[i].k])return WF_STEPS[i];
   }
   return WF_ROAD;
