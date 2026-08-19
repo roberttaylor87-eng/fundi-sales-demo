@@ -683,7 +683,11 @@ html.dark .tag-bo{background:#3A2E14;color:#F0C878}
 .jc-r.todo .jc-rl{font-weight:600;color:var(--soft)}
 .jc-r.todo .jc-rk::before{content:"";width:7px;height:7px;border-radius:50%;border:1.5px solid var(--line)}
 .jc-r.skipped .jc-rl{font-weight:600;color:var(--soft)}
-.jc-r.skipped .jc-rk::before{content:"";width:7px;height:7px;border-radius:50%;border:1.5px dashed var(--soft)}
+/* A bar, not a ring. A dashed ring reads as an empty checkbox, which is what
+   put "Boss signed" on the 20 Aug handset looking outstanding on a job that
+   said 9 of 9 done. This step is settled -- the job did not need it -- and it
+   has to look settled and different from both a tick and a not-yet. */
+.jc-r.skipped .jc-rk::before{content:"";width:9px;height:2px;border-radius:1px;background:var(--soft)}
 .jc-r.stopped .jc-rk{color:var(--danger)}
 .jc-r.stopped .jc-rl{color:var(--danger);font-weight:800}
 .jc-r.stopped .jc-rw{color:var(--danger)}
@@ -2146,7 +2150,7 @@ select::-ms-expand{display:none}
         <button class="btn set-reset" onclick="resetDemoData()" id="setResetBtn">Reset demo data</button>
         <button class="btn set-reh" onclick="rehearsalDay()" id="setRehBtn">Set up a rehearsal day</button>
         <div class="field-hint" id="setRehHint">Clears today and leaves five orders part-way through the day, one at each step. Your customers, catalogue, settings and the last twelve months are untouched.</div>
-        <div style="text-align:center;margin-top:14px;font-size:calc(11px * var(--ts));color:var(--soft)" id="buildStamp">Fundi Sales v2.0 · 19 Aug 2026 · demo build</div>
+        <div style="text-align:center;margin-top:14px;font-size:calc(11px * var(--ts));color:var(--soft)" id="buildStamp">Fundi Sales v2.0 · 20 Aug 2026 · demo build</div>
       </div>
     </div>
   </div>
@@ -3457,9 +3461,13 @@ function seedDelivery(list){
   if(!DEMO_MODE||!list||!list.length)return;
   var HOUR=3600000;
   list.forEach(function(o,i){
-    if(!o||o.delivStatus!=='delivered'||o.delivAt)return;
+    if(!o||o.delivStatus!=='delivered')return;
     var seed=0, id=String(o.id||i);
     for(var k=0;k<id.length;k++)seed=(seed*31+id.charCodeAt(k))>>>0;
+    /* The delivery half is seeded once. The payment half below runs every
+       time, because seedPayments cannot know the arrival -- it is called
+       before this. Splitting the early return is what lets both be right. */
+    if(o.delivAt)return seedPayTimes(o,seed);
     var pick=seed%10;
     var external=pick>=4;                       /* roughly six in ten go out */
     var c=DEMO_CARRIERS[seed%DEMO_CARRIERS.length];
@@ -3468,7 +3476,6 @@ function seedDelivery(list){
     if(external){
       o.delivProvider=c.name;
       o.delivQuote=Math.max(3000,Math.round(total*c.rate/500)*500);
-      o.delivQuoteAt=o.delivQuoteAt||Date.now();
       o.delivApproval=o.delivQuote<o.delivBudget?'self':'boss';
     }
     /* the stages, walked backwards from an arrival that respects the order it
@@ -3477,11 +3484,36 @@ function seedDelivery(list){
     var lag=(external?c.hrs:7)+(seed%7);
     var arrive=o.date+lag*HOUR;
     o.delivAt=arrive;
-    o.stages={approved:o.date+(1+seed%5)*HOUR,
-      picked:o.date+(3+seed%6)*HOUR,
-      checked:o.date+Math.max(4,(3+seed%6)+1)*HOUR,
-      loaded:o.date+Math.max(5,(3+seed%6)+2)*HOUR};
+    /* Walked in SPINE order, one hour a step. It used to be walked in
+       ORDER_STAGES order -- approved first, one to five hours in, then picking
+       three to nine hours in -- and the 20 Aug reorder put the signature after
+       the checking, so 47 of the 51 seeded orders read backwards down the rail.
+       The comment above is the rule; this now keeps it against the order the
+       rail actually draws.
+
+       The signature is only stamped when the trip went over the allowance,
+       because that is the only time he is asked. Under it the step is skipped,
+       which is what a demo book should show. */
+    var at=function(n){return o.date+n*HOUR;};
+    var p=1+seed%3, ck=p+1, ar=ck+1, ap=ar+1, ld=ap+1;
+    o.delivQuoteAt=o.delivQuoteAt||at(ar);
+    o.stages={picked:at(p),checked:at(ck),loaded:at(ld)};
+    if(o.delivQuote!=null&&o.delivQuote>o.delivBudget)o.stages.approved=at(ap);
     if(o.stages.loaded>arrive)o.delivAt=o.stages.loaded+HOUR;
+    seedPayTimes(o,seed);
+  });
+}
+/* seedPayments stamps a seeded payment at o.date, because it runs before the
+   arrival is known and o.date is the only time it has. Money does not change
+   hands before the goods do, so a payment stamped at the order's creation
+   reads, on the rail, as collected before it was delivered.
+   Only seeded payments move. A payment she actually recorded carries a real
+   instant and is never touched. */
+function seedPayTimes(o,seed){
+  (o.payments||[]).forEach(function(p,n){
+    if(!p||String(p.id||'').indexOf('seedpay-')!==0)return;
+    if(!o.delivAt)return;
+    p.at=o.delivAt+((seed+n*7)%40)*60000;
   });
 }
 function demoOrdersInit(){
@@ -14460,6 +14492,12 @@ function recordHandover(){
   if(!saveHandovers(hs)){toast(t('hoSaveFailed'));return null;}
   cash.forEach(function(x){
     x.pay.handoverId=h.id;
+    /* The handover's own instant, on the payment, because the job card reads
+       the order and not the handover book. Without it the "Cash handed over"
+       step borrowed the PAYMENT's time and the two steps printed the same
+       minute on every finished job -- two of the four same-minute stamps in
+       the 20 Aug field test were this, not her tapping quickly. */
+    x.pay.handoverAt=h.at;
     /* The boss is now holding a total that depends on this order being what
        it is. Same rule as the invoice: a figure has left, to someone who acts
        on it. */
@@ -15093,24 +15131,23 @@ function wfStatus(o){
   /* A job she has abandoned is waiting on nobody. Without this it went on
      reporting a step -- "waiting on the store" against work she stopped. */
   if(o.abandonedAt)return null;
-  if(!delivArranged(o))return WF_ARRANGE;
-  var s=stageOf(o);
-  for(var i=0;i<WF_STEPS.length;i++){
-    /* One decision, one implementation. spineApproved answers whether the
-       signature is outstanding, and it knows three things this loop did not:
-       Pauline's rule that he only signs over the 3% or over 100,000; that an
-       order grouped onto another trip or paid up by the customer never
-       reaches him; and that a refusal ends the job rather than leaving it
-       waiting for him to change his mind. All three chased him forever.
-       check-spine holds this function and jobSpine to the same answer. */
-    if(WF_STEPS[i].k==='approved'){
-      var a=spineApproved(o);
-      if(a.state==='stopped')return null;
-      if(a.state==='skipped')continue;
-    }
-    if(!s[WF_STEPS[i].k])return WF_STEPS[i];
-  }
-  return WF_ROAD;
+  /* One list, not two. This answers "what is it waiting on" for the badge,
+     Leo's feed and the Orders filter; jobSpine answers the same question for
+     the rail. Walking a parallel list drifted from the spine twice in two
+     days -- once over who signs, once over the order of the steps -- and each
+     time an assertion had to be written to notice. So it reads the spine
+     instead, and the two cannot disagree because there is only one of them.
+     WF_OF maps a beat onto the descriptor those three screens already take. */
+  var L=spineLive(jobSpine(o));
+  return L?wfOf(L.k):null;
+}
+/* Beats past the vehicle -- paid, handed over -- have no descriptor, and get
+   null: wfStatus has never spoken for the money and the card carries it now. */
+function wfOf(k){
+  if(k==='arranged')return WF_ARRANGE;
+  if(k==='delivered')return WF_ROAD;
+  for(var i=0;i<WF_STEPS.length;i++)if(WF_STEPS[i].k===k)return WF_STEPS[i];
+  return null;
 }
 /* Who has to sign, and when. Pauline, 19 Aug: the boss only looks at a
    delivery when the 3% will not cover it, or when the trip costs more than
@@ -15152,23 +15189,39 @@ function bossNeeded(o){
    The delivery is priced BEFORE the boss sees it, because the shortfall is
    what he is being asked to sign. ORDER_STAGES keeps its own order and its own
    checker; this is a view over those same stamps, never a second copy. */
+/* Reordered 20 Aug, from the handset. The 19 Aug order put arranging second,
+   reasoning that the boss cannot sign a shortfall nobody has priced. The field
+   test read: picked 03:45, checked 03:49, arranged 17:22 -- she picks the
+   stock, then works out the trip. The rail printed those true times down an
+   order she had not worked in, and the card read as though time ran backwards.
+
+   This order is hers, and it still keeps the logic: the trip is priced before
+   the signature, because the signature is about the shortfall. Robert ruled on
+   20 Aug that the boss is involved only when the 3% will not cover it or it
+   costs more than 100,000, so the signature sits after the price and is
+   skipped outright when it is not needed. */
 var SPINE=[
   {k:'written',lab:'jcWritten'},
-  {k:'arranged',lab:'spDeliv'},
-  {k:'approved',lab:'stgApproved'},
   {k:'picked',lab:'stgPicked'},
   {k:'checked',lab:'stgChecked'},
+  {k:'arranged',lab:'spDeliv'},
+  {k:'approved',lab:'stgApproved'},
   {k:'loaded',lab:'stgLoaded'},
   {k:'delivered',lab:'jcDelivered'},
   {k:'paid',lab:'spPaid'},
   {k:'handed',lab:'spHanded'}
 ];
 function spineApproved(o){
+  /* The record first, the rule second. He can sign a trip he did not have to
+     sign, and that is history: a rule about whether it was REQUIRED must not
+     delete the fact that it HAPPENED. Read the other way round -- which is how
+     this shipped on 19 Aug -- the 20 Aug handset showed an order carrying his
+     stamp as an empty ring, on a job reading 9 of 9 done. */
+  var s=stageOf(o);
+  if(s.approved)return {state:'done',at:s.approved};
   var need=bossNeeded(o);
   if(need===null)return {state:'todo'};
   if(need===false)return {state:'skipped',why:'inBudget'};
-  var s=stageOf(o);
-  if(s.approved)return {state:'done',at:s.approved};
   var d=o.delivDecision&&o.delivDecision.outcome;
   /* Resolved without him: grouped onto another trip, or the customer paid the
      difference. He never saw it, so the step is settled and not outstanding. */
@@ -15180,11 +15233,22 @@ function spineHanded(o){
   var ps=(o&&o.payments)||[];
   if(!ps.length)return {state:'todo'};
   var need=ps.filter(payNeedsHandover);
+  /* Record first, exactly as spineApproved does. A handover that actually
+     happened is history, whatever the rule would say about whether one was
+     required -- and money can be swept that the rule would have waived. */
+  var swept=ps.filter(function(p){return !!p.handoverId;});
+  if(swept.length&&!need.some(function(p){return !p.handoverId;})){
+    var sa=swept.map(function(p){return p.handoverAt||p.at;}).filter(Boolean);
+    return {state:'done',at:sa.length?Math.max.apply(null,sa):null};
+  }
   /* Straight to the company account, or mobile money that never came through
      her phone: there is no cash to carry and nothing to hand over. */
   if(!need.length)return {state:'skipped',why:'notCash'};
   if(need.some(function(p){return !p.handoverId;}))return {state:'todo'};
-  var ats=need.map(function(p){return p.at;}).filter(Boolean);
+  /* handoverAt is when it was handed over; p.at is when it was collected. The
+     fallback is for handovers recorded before 20 Aug, which carry no instant
+     of their own -- they degrade to the old answer rather than to nothing. */
+  var ats=need.map(function(p){return p.handoverAt||p.at;}).filter(Boolean);
   return {state:'done',at:ats.length?Math.max.apply(null,ats):null};
 }
 function jobSpine(o){
@@ -15220,10 +15284,23 @@ function jobSpine(o){
      drawn as unfinished, because it is, and never offered as the thing to do
      next. wfStatus already returns null for a delivered order; this is the
      same answer reached the same way. */
-  var lastDone=-1;
-  out.forEach(function(x,i){if(x.state==='done')lastDone=i;});
+  /* A gap is only a hole once the goods have gone. Before that, a step she has
+     not done is simply not done yet -- she may price a trip before she picks
+     it, which the 20 Aug reorder made ordinary, and the plain "skip everything
+     above the last done step" rule then read her priced trip as proof that
+     picking and checking were history and told her to load.
+     Once loaded or delivered is stamped, anything still outstanding above it
+     is something nobody wrote down, and must never be named as her next move. */
+  var gone=out.some(function(x){
+    return (x.k==='loaded'||x.k==='delivered')&&x.state==='done';});
+  var from=0;
+  if(gone){
+    var lastDone=-1;
+    out.forEach(function(x,i){if(x.state==='done')lastDone=i;});
+    from=lastDone+1;
+  }
   var frontier=-1;
-  for(var i=lastDone+1;i<out.length;i++){
+  for(var i=from;i<out.length;i++){
     if(out[i].state==='todo'){frontier=i;break;}
   }
   /* Already halted by a refusal: that is the one stop, and a second would
@@ -16574,11 +16651,34 @@ function stageLock(o,k){
     return later?t('stgLockClr'):null;
   }
   var prev=i>0?ORDER_STAGES[i-1]:null;
-  if(prev&&!st[prev.k])return t('stgLockNeed').replace('{s}',t('wfCell'+prev.k));
+  /* Relaxed 20 Aug on Robert's ruling. ORDER_STAGES runs approved, picked,
+     checked, loaded and this required each to follow the last -- so she could
+     not pick the stock until the boss had signed. His signature is only sought
+     when the 3% will not cover the trip or it costs more than 100,000, so on
+     most orders that blocked her on a signature nobody was going to give; and
+     after the 19 Aug workflow change the card was naming "pick the stock" on
+     exactly the orders this then refused. The chain still holds everywhere
+     else. Only the signature steps aside, and only when it is not wanted. */
+  if(prev&&!st[prev.k]&&!(prev.k==='approved'&&bossNeeded(o)!==true))
+    /* prev.lab, not 'wfCell'+prev.k. There is no wfCellapproved, wfCellpicked
+       or any of them in either dictionary -- t() returns undefined for a key
+       it does not hold, so this toast has been reading "undefined first" on
+       every locked tap. The key was built by concatenation, so the missing-key
+       checker could not see it and the assertion covering this line pinned the
+       shape of the call rather than whether it resolved. ORDER_STAGES already
+       carries the translated label for each step. */
+    return t('stgLockNeed').replace('{s}',t(prev.lab));
+  /* And it cannot be sought before there is a figure to sign. The shortfall is
+     the thing he is being asked to carry, and it does not exist until the trip
+     has a price. */
+  if(k==='approved'&&!delivArranged(o))return t('stgLockDeliv');
   /* Arranging the delivery sits between checked and loaded on the board, so
      loading before it would put the row and the badge back in disagreement --
      the very thing this is here to stop. */
   if(k==='loaded'&&!delivArranged(o))return t('stgLockDeliv');
+  /* Nor onto a vehicle whose shortfall he was asked to carry and has not. */
+  if(k==='loaded'&&bossNeeded(o)===true&&!st.approved)
+    return t('stgLockNeed').replace('{s}',t('stgApproved'));
   return null;
 }
 function stageStamp(oid,k){
@@ -16918,18 +17018,29 @@ function jobFold(k){
   state.jobOpen[k]=!state.jobOpen[k];renderOrders();
 }
 function jobRowHtml(o){
-  var w=wfStatus(o), done=stagePoints(o).length, total=ORDER_STAGES.length+2;
-  /* The step NAME carries position, not a rail on its own: a 3px bar is the
-     first thing to go on a cracked screen in direct sun. The denominator is
-     fixed at six for every job so the fractions can be compared down the
-     list, which is the only thing a list is for. */
+  /* The same fraction the card shows, from the same function. This read
+     stagePoints over ORDER_STAGES.length+2 until 20 Aug, so the list said
+     "6 of 6 done" on a job whose own card said "9 of 9" -- the card was
+     changed in Phase B and its row was not. The intent in the note below was
+     always a constant denominator; the spine is that, and it counts the money
+     as well as the vehicle.
+
+     The step NAME carries position, not a rail on its own: a 3px bar is the
+     first thing to go on a cracked screen in direct sun. */
+  var w=wfStatus(o), sp=jobSpine(o);
+  var done=spineSettled(sp), total=sp.length;
+  /* Finished means all of them settled, not merely delivered -- wfStatus
+     returns null the moment the goods arrive, and the cash can still be in
+     her bag. Same test the card uses. */
+  var settled=done===total;
   return '<div class="job-row" onclick="openJobCard(\''+o.id+'\')">'
     +'<div class="jr-main"><div class="jr-nm">'+escHtml(o.custName||'')+'</div>'
     +'<div class="jr-meta">'+escHtml(o.area||'')+' \u00b7 '
     +escHtml(t('jcDone').replace('{n}',done).replace('{t}',total))+'</div>'
     +(o.abandonedAt?'<div class="jr-next aband">'+escHtml(t('jcIsAbandoned'))+'</div>'
-      :(w?'<div class="jr-next '+w.cls+'">'+escHtml(t(w.lab))+'</div>'
-        :'<div class="jr-next fin">'+escHtml(t('jcFinished'))+'</div>'))
+      :(settled?'<div class="jr-next fin">'+escHtml(t('jcFinished'))+'</div>'
+        :(w?'<div class="jr-next '+w.cls+'">'+escHtml(t(w.lab))+'</div>'
+          :'<div class="jr-next">'+escHtml(spineLive(sp)?t(spineLive(sp).lab):t('jcFinished'))+'</div>')))
     +'</div><div class="jr-val">'+fmtTSh(o.total)+'</div></div>';
 }
 function jobsListHtml(){
