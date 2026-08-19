@@ -669,14 +669,27 @@ html.dark .tag-bo{background:#3A2E14;color:#F0C878}
 @media (prefers-reduced-motion:reduce){.jc-railfill{transition:none}}
 .jc-rlist{flex:1;min-width:0}
 .jc-r{display:flex;align-items:flex-start;gap:8px;padding:7px 0}
-.jc-rk{flex:none;width:13px;display:flex;align-items:center;justify-content:center;height:calc(17px * var(--ts))}
+/* 19px, not 13. The column is a constant width so every marker sits on one
+   vertical line whatever it is -- a filled tick, a hollow ring, a skipped bar
+   or a cross. */
+.jc-rk{flex:none;width:19px;display:flex;align-items:center;justify-content:center;height:calc(19px * var(--ts))}
 .jc-rb{flex:1;min-width:0;display:block}
 .jc-rtop{display:flex;align-items:baseline;gap:8px}
 .jc-rl{flex:1;font-size:calc(13px * var(--ts));font-weight:700;color:var(--ink)}
 .jc-rt{font-size:calc(12px * var(--ts));color:var(--soft);white-space:nowrap}
 .jc-rw{display:block;font-size:calc(11.5px * var(--ts));color:var(--soft);margin-top:1px}
 .jc-rday{font-size:calc(11px * var(--ts));font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.5px;padding:9px 0 2px}
-.jc-r.done .jc-rk{color:var(--good)}
+/* A filled circle with the check inside, not a hairline check floating on its
+   own. A done step is a positive and has to read as one at a glance down a
+   list of nine; the old mark was a faint annotation. The check itself is 20%
+   larger than it was (11px to 13px of drawn tick) and the circle is the
+   WhatsApp green already in the palette, which is the green she associates
+   with something having gone through. */
+.jc-r.done .jc-rk{color:#fff}
+.jc-r.done .jc-rk svg{width:19px;height:19px;padding:3px;border-radius:50%;background:var(--wa);box-sizing:border-box}
+/* The same treatment for a stop, so the two read as a matched pair rather
+   than one being a shape and the other a stray glyph. */
+.jc-r.stopped .jc-rk svg{width:19px;height:19px;padding:3px;border-radius:50%;background:var(--danger);box-sizing:border-box}
 .jc-r.done .jc-rl{font-weight:600;color:var(--soft)}
 .jc-r.live .jc-rl{color:var(--ink);font-weight:800}
 .jc-r.live .jc-rk::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--primary)}
@@ -688,7 +701,7 @@ html.dark .tag-bo{background:#3A2E14;color:#F0C878}
    said 9 of 9 done. This step is settled -- the job did not need it -- and it
    has to look settled and different from both a tick and a not-yet. */
 .jc-r.skipped .jc-rk::before{content:"";width:9px;height:2px;border-radius:1px;background:var(--soft)}
-.jc-r.stopped .jc-rk{color:var(--danger)}
+.jc-r.stopped .jc-rk{color:#fff}
 .jc-r.stopped .jc-rl{color:var(--danger);font-weight:800}
 .jc-r.stopped .jc-rw{color:var(--danger)}
 .jc-day{font-size:calc(11px * var(--ts));color:var(--soft);font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin:8px 0 4px -12px}
@@ -13842,6 +13855,15 @@ function jcRailHtml(o){
     if(day)lastDay=day;
     var gap=(prevAt&&fwd)?fmtDur(st.at-prevAt):null;
     if(fwd)prevAt=st.at;
+    /* A stamp that does not follow the one above it carries its DATE. Bare
+       "00:46" under a 03:46 reads as time running backwards -- which is what
+       the 20 Aug handset showed on a signature given the day before the order
+       reached this point. The leg and the day divider were already suppressed
+       for it; the time itself was still printed as though it followed, which
+       is the app stating something untrue in the quietest possible way. */
+    var tm=!st.at?''
+      :(fwd?jcTime(st.at)
+           :dLocal(st.at,{day:'numeric',month:'short'})+' '+jcTime(st.at));
     var mark=st.state==='done'?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg>'
       :(st.state==='stopped'?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>':'');
     var why=st.why?t('spWhy'+st.why.charAt(0).toUpperCase()+st.why.slice(1)):'';
@@ -13850,7 +13872,7 @@ function jcRailHtml(o){
       +'<span class="jc-rk">'+mark+'</span>'
       +'<span class="jc-rb"><span class="jc-rtop">'
       +'<span class="jc-rl">'+escHtml(t(st.lab))+'</span>'
-      +'<span class="jc-rt">'+escHtml(st.at?jcTime(st.at):'')+'</span></span>'
+      +'<span class="jc-rt">'+escHtml(tm)+'</span></span>'
       +(sub?'<span class="jc-rw">'+escHtml(sub)+'</span>':'')
       +'</span></div>';
   });
