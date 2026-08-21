@@ -2163,7 +2163,7 @@ select::-ms-expand{display:none}
         <button class="btn set-reset" onclick="resetDemoData()" id="setResetBtn">Reset demo data</button>
         <button class="btn set-reh" onclick="rehearsalDay()" id="setRehBtn">Set up a rehearsal day</button>
         <div class="field-hint" id="setRehHint">Clears today and leaves five orders part-way through the day, one at each step. Your customers, catalogue, settings and the last twelve months are untouched.</div>
-        <div style="text-align:center;margin-top:14px;font-size:calc(11px * var(--ts));color:var(--soft)" id="buildStamp">Fundi Sales v2.0 · 20 Aug 2026 · demo build</div>
+        <div style="text-align:center;margin-top:14px;font-size:calc(11px * var(--ts));color:var(--soft)" id="buildStamp">Fundi Sales v2.0 · 21 Aug 2026 · demo build</div>
       </div>
     </div>
   </div>
@@ -13296,12 +13296,22 @@ function exportPerfPDF(){docConfirm('myPerformance',false);}
    are meant to have happened this morning. Her own order, the one she walks
    through, is stamped live as she taps -- so its legs read what actually
    elapsed. Nothing here fabricates a measurement on her thread. */
+/* Restaged 21 Aug for the nine-beat spine. These were written when the order
+   ran approved first, so every seeded job put the boss's signature above an
+   unpriced trip -- a tick sitting over an empty step, which is the backwards
+   card the 20 Aug field test reported. They now run in the order she works:
+   pick, check, price the trip, and only then the signature, which is only
+   sought when the trip is over the allowance.
+
+   `deliv` is hours ago the trip was priced; `over` prices it above the 3% so
+   the boss genuinely has something to sign. Without a price the delivery beat
+   is a hole and the job cannot move, which is what every one of these had. */
 var REH_SEED=[
-  {cust:0, lines:[[1,6],[4,2]],  stages:{}},                       /* with the boss */
-  {cust:1, lines:[[9,10]],       stages:{approved:-3.0}},          /* with the store */
-  {cust:2, lines:[[1,4],[12,6]], stages:{approved:-4.5,picked:-2.0}},/* hers to check */
-  {cust:3, lines:[[20,8]],       stages:{approved:-5.5,picked:-4,checked:-2.5}},  /* ready to load */
-  {cust:4, lines:[[7,5],[30,3]],  stages:{approved:-6,picked:-5,checked:-4,loaded:-3}} /* on the road */
+  {cust:0, lines:[[1,6],[4,2]],  st:{}},                                /* storeman to pick */
+  {cust:1, lines:[[9,10]],       st:{picked:-3.0}},                     /* hers to check */
+  {cust:2, lines:[[1,4],[12,6]], st:{picked:-4.5,checked:-3.0}},        /* trip to work out */
+  {cust:3, lines:[[20,8]],       st:{picked:-5.5,checked:-4.0}, deliv:-3.0, over:1}, /* with the boss */
+  {cust:4, lines:[[7,5],[30,3]], st:{picked:-6,checked:-5,approved:-3}, deliv:-4.0}  /* ready to load */
 ];
 function rehearsalDay(){
   fundiConfirm(t('rehAsk'),function(){
@@ -13323,9 +13333,35 @@ function rehearsalDay(){
 
     /* a quote she has already sent and not heard back on is realistic, but a
        pile of them makes her own hard to find in Follow-ups */
+    /* EVERY awaiting quote is retired, not only the ones still live. The old
+       rule spared any quote already expired by age, which left twenty-three
+       of them still marked awaiting -- so Follow-ups was a pile and the one
+       she is meant to walk in on could not be found in it. A confirmed one is
+       retired too, or the review screen opens on somebody else's order. */
     (state.quotes||[]).forEach(function(q){
-      if(q.status==='awaiting'&&!quoteExpired(q))q.status='expired';
+      if(q.status==='awaiting'||q.status==='confirmed')q.status='expired';
     });
+    /* And exactly one to start on: sent, waiting on the customer. Saying they
+       said yes is where the rehearsal begins -- that creates the job, and the
+       nine steps run from there. */
+    var rc=(state.customers||[])[5];
+    if(rc){
+      var ri=[[2,4],[15,12]].map(function(l){
+        var p=CATALOGUE.find(function(x){return x.id===l[0];});
+        return p?{id:p.id,qty:l[1],unitPrice:p.price,list:p.price,
+                  override:false,backorder:false}:null;
+      }).filter(Boolean);
+      if(ri.length){
+        var rg=itemsTotal(ri), RV=vatCfg(), rvat=0, rtot=rg;
+        if(RV.on){
+          if(RV.incl)rvat=rg-Math.round(rg/(1+RV.rate/100));
+          else{rvat=Math.round(rg*RV.rate/100);rtot=rg+rvat;}
+        }
+        state.quotes.push({id:newId('q'),custId:rc.id,custName:rc.biz,
+          items:ri,date:now-2*HOUR,status:'awaiting',total:rtot,
+          discAmt:0,vatAmt:rvat,vatRate:RV.on?RV.rate:0,vatIncl:!!RV.incl});
+      }
+    }
 
     state.orders=[];
     REH_SEED.forEach(function(spec,i){
@@ -13337,8 +13373,12 @@ function rehearsalDay(){
       }).filter(Boolean);
       if(!items.length)return;
       var gross=items.reduce(function(a,it){return a+it.unitPrice*it.qty;},0);
-      var pct=(c.tier==='vip')?15:10;
-      var disc=Math.round(gross*pct/100), net=gross-disc;
+      /* No discount. This gave VIPs 15% and everyone else 10% off the tier,
+         which is the automatic rate that went on 19 Aug -- the price is the
+         price, and a discount is now something she types on one quote. A
+         rehearsal book that still discounts by tier rehearses a rule the app
+         no longer has. */
+      var disc=0, net=gross;
       /* the one VAT resolver, exactly as totals() uses it -- a second
          calculation here would be a second answer to what the order is worth */
       var V=vatCfg(), vat=0, total=net;
@@ -13347,13 +13387,28 @@ function rehearsalDay(){
         else{vat=Math.round(net*V.rate/100);total=net+vat;}
       }
       var stages={};
-      Object.keys(spec.stages).forEach(function(k){stages[k]=now+spec.stages[k]*HOUR;});
+      Object.keys(spec.st).forEach(function(k){stages[k]=now+spec.st[k]*HOUR;});
+      /* The trip, priced where the job has got past it. Over the allowance
+         when the seed says so, so one of the five genuinely waits on the boss
+         and the other four never trouble him -- which is the rule. */
+      var bud=delivMax(total);
+      var dq=spec.deliv==null?null
+        :(spec.over?bud+15000:Math.max(3000,Math.round(bud*0.7/500)*500));
+      /* The order is written an hour before its own earliest stamp. It used to
+         be now-(7-i) hours, which made each seeded job NEWER than the one
+         before while its stages ran further back -- so four of the five had a
+         step completed before the order existed, and the rail read backwards
+         on the very book built for rehearsing it. */
+      var offs=Object.keys(spec.st).map(function(k){return spec.st[k];});
+      if(spec.deliv!=null)offs.push(spec.deliv);
+      var t0=now+((offs.length?Math.min.apply(null,offs):0)-1)*HOUR;
       var o={v:ORDER_V,id:newId('o'),quoteId:null,
         repId:REP_ID,repName:repName(),
         custName:c.biz,area:c.area||'',person:c.person||'',phone:c.phone||'',
         total:total,discAmt:disc,vatAmt:vat,vatRate:V.on?V.rate:0,vatIncl:V.incl,
-        items:items,date:now-(7-i)*HOUR,
-        delivBudget:delivMax(total),delivSchedule:null,delivStatus:'pending',
+        items:items,date:t0,
+        delivBudget:bud,delivSchedule:null,delivStatus:'pending',
+        delivQuote:dq,delivQuoteAt:dq==null?null:now+spec.deliv*HOUR,
         stages:stages};
       reconcileLines(items,total,disc,o.vatIncl?0:vat,'rehearsal order '+o.id);
       state.orders.push(o);
